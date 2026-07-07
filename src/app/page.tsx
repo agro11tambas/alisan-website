@@ -4,6 +4,8 @@ import { productService } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
 import ProductCard from "@/components/product/ProductCard";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const [categories, groups] = await Promise.all([
     categoryService.getCategories(),
