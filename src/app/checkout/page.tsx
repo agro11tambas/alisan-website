@@ -178,6 +178,8 @@ export default function CheckoutPage() {
       // POST order to backend API
       const orderPayload = {
         shipping: {
+          recipient_name: selectedAddress.recipientName,
+          whatsapp_number: selectedAddress.whatsappNumber,
           business_name: selectedAddress.businessName || "",
           address: selectedAddress.completeAddress,
           google_maps: selectedAddress.googleMapsLink || "",
