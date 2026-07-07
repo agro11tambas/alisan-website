@@ -41,6 +41,7 @@ export type ProductGroup = {
   gallery?: string[];
   brand?: string;
   category: string;
+  categories?: string[];
   rating: number;
   totalSold: number;
   products: Product[];
@@ -70,6 +71,7 @@ export type CartItem = {
   stock: number;
   minOrder: number;
   orderStep: number;
+  combinationId?: number;
 };
 
 export interface Address {

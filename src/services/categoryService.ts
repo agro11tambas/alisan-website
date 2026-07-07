@@ -1,30 +1,32 @@
+import { api } from "./api";
 import { Category } from "@/types";
 
-const MOCK_CATEGORIES: Category[] = [
-  { id: "c1", name: "Sablon", slug: "sablon", image: "/image/Placeholder.jpg" },
-  {
-    id: "c2",
-    name: "Plastik",
-    slug: "plastik",
-    image: "/image/Placeholder.jpg",
-  },
-  { id: "c3", name: "Cup", slug: "cup", image: "/image/Placeholder.jpg" },
-  {
-    id: "c4",
-    name: "Tutup Cup",
-    slug: "tutup-cup",
-    image: "/image/Placeholder.jpg",
-  },
-];
+const fetchCategories = async (): Promise<Category[]> => {
+  try {
+    const response = await api.get("/ecommerce/categories");
+    if (response.data?.success && response.data?.data) {
+      return response.data.data.map((c: any) => ({
+        id: String(c.id),
+        name: c.name,
+        slug: c.slug,
+        image: c.image || "/image/Placeholder.jpg",
+        icon: c.icon,
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return [];
+  }
+};
 
 export const categoryService = {
   getCategories: async (): Promise<Category[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return MOCK_CATEGORIES;
+    return fetchCategories();
   },
 
   getCategoryBySlug: async (slug: string): Promise<Category | undefined> => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    return MOCK_CATEGORIES.find((c) => c.slug === slug);
+    const categories = await categoryService.getCategories();
+    return categories.find((c) => c.slug === slug);
   },
 };

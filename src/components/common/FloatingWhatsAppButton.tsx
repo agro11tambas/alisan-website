@@ -3,9 +3,29 @@
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { informationService } from "@/services/informationService";
 
-export default function FloatingWhatsAppButton() {
+let cachedPhoneNumber: string | null = null;
+
+export default function FloatingWhatsAppButton({ initialPhoneNumber = "6281234567890" }: { initialPhoneNumber?: string }) {
   const pathname = usePathname();
+  const [adminNumber, setAdminNumber] = useState<string>(cachedPhoneNumber || initialPhoneNumber);
+
+  useEffect(() => {
+    if (!cachedPhoneNumber) {
+      informationService.getInformation().then(info => {
+        if (info && info.phone_number) {
+          let num = info.phone_number.replace(/\D/g, '');
+          if (num.startsWith('0')) {
+            num = '62' + num.substring(1);
+          }
+          cachedPhoneNumber = num;
+          setAdminNumber(num);
+        }
+      });
+    }
+  }, []);
 
   // Define routes that have a bottom floating action bar on mobile
   // Product pages have format /products/slug, but not /products itself
@@ -14,8 +34,6 @@ export default function FloatingWhatsAppButton() {
     pathname === "/checkout" ||
     (pathname?.startsWith("/products/") && pathname !== "/products");
 
-  const adminNumber =
-    process.env.NEXT_PUBLIC_WHATSAPP_ADMIN_NUMBER || "6281234567890";
   const whatsappUrl = `https://wa.me/${adminNumber}`;
 
   return (

@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alisan | Modern E-Commerce",
-  description: "Your premium destination for modern ecommerce.",
+  title: "Alisan | Spesialis Sablon Cup Plastik",
+  description: "Pusat penyedia dan jasa sablon cup plastik profesional. Kami hadir untuk membantu membranding kemasan bisnis minuman Anda dengan kualitas sablon terbaik.",
 };
 
 export default function RootLayout({
@@ -35,7 +35,9 @@ export default function RootLayout({
         <main className="flex-1">{children}</main>
         <Footer />
         <FloatingWhatsAppButton />
-        <Toaster position="top-right" />
+        <div className="hidden md:block">
+          <Toaster position="top-center" />
+        </div>
       </body>
     </html>
   );

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Footer() {
   return (
@@ -7,14 +8,17 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
           {/* Brand */}
           <div className="max-w-md">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-white font-bold text-xl tracking-tighter">
-                A
-              </div>
-              <span className="text-2xl font-bold tracking-tight text-primary">Alisan</span>
+            <Link href="/" className="flex items-center mb-4">
+              <Image 
+                src="/image/1751788462_LOGO-ALISAN_cropped.png" 
+                alt="Alisan Logo" 
+                width={160} 
+                height={60} 
+                className="h-10 w-auto object-contain"
+              />
             </Link>
             <p className="text-sm text-gray-500 leading-relaxed">
-              Your premium destination for modern ecommerce. Delivering quality products with seamless experience.
+              Pusat penyedia dan jasa sablon cup plastik profesional. Kami hadir untuk membantu membranding kemasan bisnis minuman Anda dengan kualitas sablon terbaik dan harga bersaing.
             </p>
           </div>
 

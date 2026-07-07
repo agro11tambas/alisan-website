@@ -6,7 +6,7 @@ import { useCartStore } from "@/stores/useCartStore";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Minus, Plus, ShoppingCart, AlertCircle, MessageSquare, Heart, ShieldCheck } from "lucide-react";
-import { productService } from "@/services/productService";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface ProductActionsProps {
   group: ProductGroup;
@@ -20,28 +20,61 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore(state => state.addItem);
   const router = useRouter();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  const handleAddToCartFromSheet = () => {
+    if (!selectedProduct) {
+      toast.error("Silakan pilih varian terlebih dahulu");
+      return;
+    }
+    handleAddToCart();
+    setIsSheetOpen(false);
+  };
 
   useEffect(() => {
-    if (group.category === 'c3') {
-      productService.getAvailableLids().then(setLids);
+    if ((group as any)._lids && (group as any)._lids.length > 0) {
+      if (selectedProduct && (group as any)._combinations) {
+        // Filter lids based on combinations mapped in the database
+        const validLidIds = (group as any)._combinations
+          .filter((c: any) => c.product_option_id === Number(selectedProduct.id))
+          .map((c: any) => String(c.lid_option_id));
+          
+        const filteredLids = (group as any)._lids.filter((lid: AddOnProduct) => 
+          validLidIds.includes(lid.id)
+        );
+        setLids(filteredLids);
+        
+        // Auto-deselect lid if it's no longer valid for this product
+        if (selectedLid && !validLidIds.includes(selectedLid.id)) {
+          setSelectedLid(null);
+        }
+      } else {
+        // Show all lids if no product is selected yet
+        setLids((group as any)._lids);
+      }
+    } else {
+      setLids([]);
     }
-  }, [group]);
+  }, [group, selectedProduct]);
+
+  const getCombinationImage = (productId: string, lidId?: string) => {
+    if (!lidId) return null;
+    const combo = (group as any)._combinations?.find(
+      (c: any) => String(c.product_option_id) === String(productId) && String(c.lid_option_id) === String(lidId)
+    );
+    if (combo && combo.image) return combo.image;
+    return null;
+  };
 
   const handleSelect = (p: Product) => {
     setSelectedProduct(p);
     setQuantity(p.minimumOrder || 1);
     if (onImageChange) {
-      if (selectedLid) {
-        onImageChange(
-          selectedLid.image || p.image || group.image || "/image/Placeholder.jpg",
-          selectedLid.gallery || p.gallery || group.gallery || [group.image || "/image/Placeholder.jpg"]
-        );
-      } else {
-        onImageChange(
-          p.image || group.image || "/image/Placeholder.jpg",
-          p.gallery || group.gallery || [group.image || "/image/Placeholder.jpg"]
-        );
-      }
+      const comboImage = selectedLid ? getCombinationImage(p.id, selectedLid.id) : null;
+      onImageChange(
+        comboImage || p.image || group.image || "/image/Placeholder.jpg",
+        p.gallery || group.gallery || [group.image || "/image/Placeholder.jpg"]
+      );
     }
   };
 
@@ -55,17 +88,11 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       }
     }
     if (onImageChange) {
-      if (lid) {
-        onImageChange(
-          lid.image || selectedProduct?.image || group.image || "/image/Placeholder.jpg",
-          lid.gallery || selectedProduct?.gallery || group.gallery || [group.image || "/image/Placeholder.jpg"]
-        );
-      } else {
-        onImageChange(
-          selectedProduct?.image || group.image || "/image/Placeholder.jpg",
-          selectedProduct?.gallery || group.gallery || [group.image || "/image/Placeholder.jpg"]
-        );
-      }
+      const comboImage = selectedProduct && lid ? getCombinationImage(selectedProduct.id, lid.id) : null;
+      onImageChange(
+        comboImage || selectedProduct?.image || group.image || "/image/Placeholder.jpg",
+        selectedProduct?.gallery || group.gallery || [group.image || "/image/Placeholder.jpg"]
+      );
     }
   };
 
@@ -96,14 +123,22 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     });
   };
 
-  const handleBuyNow = () => {
-    if (!selectedProduct) return;
-    addItem(group, selectedProduct, quantity, selectedLid || undefined);
-    router.push('/checkout');
+
+
+  const getCombinationPrice = (productId: string, lidId?: string) => {
+    if (!lidId) return null;
+    const combo = (group as any)._combinations?.find(
+      (c: any) => String(c.product_option_id) === String(productId) && String(c.lid_option_id) === String(lidId)
+    );
+    if (combo && Number(combo.price) > 0) return Number(combo.price);
+    return null;
   };
 
   const displayPrice = selectedProduct 
-    ? ((selectedProduct.salePrice || selectedProduct.price) + (selectedLid ? (selectedLid.salePrice || selectedLid.price) : 0))
+    ? (
+        getCombinationPrice(selectedProduct.id, selectedLid?.id) 
+        || ((selectedProduct.salePrice || selectedProduct.price) + (selectedLid ? (selectedLid.salePrice || selectedLid.price) : 0))
+      )
     : Math.min(...group.products.map(p => p.salePrice || p.price));
     
   return (
@@ -233,7 +268,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
               </button>
             </div>
             <span className="text-xs text-gray-500 md:ml-3">
-              Stock: <span className="font-medium text-gray-700">{selectedProduct ? maxStock : group.products.reduce((acc, p) => acc + p.stock, 0)}</span>
+              Maximum Qty: <span className="font-medium text-gray-700">{selectedProduct ? maxStock : group.products.reduce((acc, p) => acc + p.stock, 0)}</span>
             </span>
           </div>
         </div>
@@ -251,67 +286,153 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
           <button 
             onClick={handleAddToCart}
             disabled={!selectedProduct}
-            className="flex-1 h-10 flex items-center justify-center gap-2 border-2 border-primary text-primary font-bold text-sm rounded-md hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-10 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm rounded-md hover:bg-primary/90 transition-colors shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           >
             <ShoppingCart size={18} />
             Add to Cart
           </button>
-          <button 
-            onClick={handleBuyNow}
-            disabled={!selectedProduct}
-            className="flex-1 h-10 flex items-center justify-center bg-primary text-primary-foreground font-bold text-sm rounded-md hover:bg-primary/90 transition-colors shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-          >
-            Buy Now
-          </button>
         </div>
       </div>
 
-      {/* Mobile Sticky Action Bar - Shopee style */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-2px_10px_rgba(0,0,0,0.05)] px-2 py-1.5 pb-[calc(env(safe-area-inset-bottom)+6px)]">
-        <div className="grid grid-cols-3 gap-1.5 h-11">
-          
-          {/* Quantity */}
-          <div className="flex items-center border border-gray-200 rounded overflow-hidden bg-gray-50 col-span-1">
-            <button 
-              onClick={handleDecrease}
-              disabled={!selectedProduct || quantity <= minOrder}
-              className="w-9 h-full flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-            >
-              <Minus size={14} />
-            </button>
-            <div className="flex-1 h-full flex items-center justify-center border-x border-gray-200 text-xs font-bold bg-white">
-              {quantity}
+      {/* Mobile Sticky Action Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white shadow-[0_-15px_30px_-15px_rgba(0,0,0,0.1)] border-t border-gray-100 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+        <button 
+          onClick={() => setIsSheetOpen(true)}
+          className="w-full h-11 flex items-center justify-center bg-primary text-primary-foreground font-bold text-[15px] rounded-full shadow-lg shadow-primary/30 active:scale-[0.98] transition-all"
+        >
+          Beli Sekarang
+        </button>
+      </div>
+
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl px-0 pb-0 pt-3 h-[85vh] flex flex-col md:hidden z-[100] border-none">
+          <SheetHeader className="px-4 pb-3 text-left border-b border-gray-100 shrink-0 relative">
+            <div className="flex items-start gap-4">
+              <div className="w-24 h-24 rounded-md overflow-hidden bg-gray-100 shrink-0 border border-gray-200 relative -mt-6 bg-white p-1 shadow-sm">
+                <img 
+                  src={(selectedProduct && selectedLid ? getCombinationImage(selectedProduct.id, selectedLid.id) : null) || selectedProduct?.image || group.image || "/image/Placeholder.jpg"} 
+                  alt="Product" 
+                  className="w-full h-full object-contain rounded"
+                />
+              </div>
+              <div className="flex-1 pt-1 pr-6">
+                <div className="text-primary font-bold text-lg mb-0.5">
+                  Rp {displayPrice.toLocaleString('id-ID')}
+                </div>
+                <div className="text-sm text-gray-500 mb-0.5">
+                  Stok: {selectedProduct ? maxStock : group.products.reduce((acc, p) => acc + p.stock, 0)}
+                </div>
+                {selectedProduct && (
+                  <div className="text-[13px] text-gray-800 line-clamp-1">
+                    Varian: {selectedProduct.name} {selectedLid ? `+ ${selectedLid.name}` : ''}
+                  </div>
+                )}
+              </div>
             </div>
-            <button 
-              onClick={handleIncrease}
-              disabled={!selectedProduct || (quantity + orderStep) > maxStock}
-              className="w-9 h-full flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-            >
-              <Plus size={14} />
-            </button>
+            <SheetTitle className="sr-only">Pilih Varian</SheetTitle>
+          </SheetHeader>
+          
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+            <div>
+              <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">Varian Cup</h3>
+              <div className="flex flex-wrap gap-2">
+                {group.products.map((p) => {
+                  const isSelected = selectedProduct?.id === p.id;
+                  const isOutOfStock = p.stock === 0;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => !isOutOfStock && handleSelect(p)}
+                      disabled={isOutOfStock}
+                      className={`min-h-[36px] py-1 px-3 flex items-center gap-2 text-[13px] font-medium rounded-sm border shrink-0 transition-all duration-200 ${
+                        isSelected 
+                          ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
+                          : isOutOfStock
+                            ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                            : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
+                      }`}
+                    >
+                      {p.image && <img src={p.image} className="w-6 h-6 rounded-sm object-cover" />}
+                      {p.optionName || p.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {lids.length > 0 && selectedProduct && (
+              <div>
+                <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">Varian Tutup</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleSelectLid(null)}
+                    className={`min-h-[36px] py-1 px-3 text-[13px] font-medium rounded-sm border shrink-0 transition-all duration-200 ${
+                      selectedLid === null 
+                        ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
+                        : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
+                    }`}
+                  >
+                    Tanpa Tutup
+                  </button>
+                  {lids.map((lid) => {
+                    const isSelected = selectedLid?.id === lid.id;
+                    const isOutOfStock = lid.stock === 0;
+                    return (
+                      <button
+                        key={lid.id}
+                        onClick={() => !isOutOfStock && handleSelectLid(lid)}
+                        disabled={isOutOfStock}
+                        className={`min-h-[36px] py-1 px-3 flex items-center gap-2 text-[13px] font-medium rounded-sm border shrink-0 transition-all duration-200 ${
+                          isSelected 
+                            ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
+                            : isOutOfStock
+                              ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                              : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
+                        }`}
+                      >
+                        {lid.image && <img src={lid.image} className="w-6 h-6 rounded-sm object-cover" />}
+                        {lid.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              <span className="text-[13px] font-medium text-gray-800">Jumlah</span>
+              <div className="flex items-center border border-gray-200 rounded-sm">
+                <button 
+                  onClick={handleDecrease}
+                  disabled={!selectedProduct || quantity <= minOrder}
+                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                >
+                  <Minus size={14} />
+                </button>
+                <div className="w-12 h-8 flex items-center justify-center border-l border-r border-gray-200 text-sm font-medium">
+                  {quantity}
+                </div>
+                <button 
+                  onClick={handleIncrease}
+                  disabled={!selectedProduct || (quantity + orderStep) > maxStock}
+                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
           </div>
           
-          {/* Cart Button */}
-          <button 
-            onClick={handleAddToCart}
-            disabled={!selectedProduct}
-            className="flex items-center justify-center gap-1.5 border border-primary text-primary bg-blue-50 font-medium text-[13px] rounded hover:bg-primary/10 disabled:opacity-50 col-span-1"
-          >
-            <ShoppingCart size={16} />
-            Cart
-          </button>
-          
-          {/* Buy Now Button */}
-          <button 
-            onClick={handleBuyNow}
-            disabled={!selectedProduct}
-            className="flex items-center justify-center bg-primary text-white font-medium text-[13px] rounded hover:bg-primary/90 disabled:opacity-50 shadow-sm col-span-1"
-          >
-            Buy Now
-          </button>
-          
-        </div>
-      </div>
+          <div className="p-3 border-t border-gray-100 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+            <button 
+              onClick={handleAddToCartFromSheet}
+              className={`w-full h-[44px] rounded flex items-center justify-center font-bold text-[15px] transition-colors ${!selectedProduct ? 'bg-gray-100 text-gray-400' : 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90'}`}
+            >
+              Masukkan Keranjang
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

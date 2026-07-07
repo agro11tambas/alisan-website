@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ProductGroup } from '@/types';
-import { Star } from 'lucide-react';
+
 
 export default function ProductCard({ group }: { group: ProductGroup }) {
   // Calculate starting price from available products
@@ -16,7 +16,7 @@ export default function ProductCard({ group }: { group: ProductGroup }) {
             alt={group.name}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-contain group-hover:scale-105 transition-transform duration-500"
           />
         )}
       </div>
@@ -37,14 +37,7 @@ export default function ProductCard({ group }: { group: ProductGroup }) {
             {group.products.length} options
           </div>
 
-          <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-gray-500">
-            <div className="flex items-center gap-0.5 text-yellow-500">
-              <Star size={10} className="md:w-[14px] md:h-[14px]" fill="currentColor" />
-              <span className="text-gray-600">{group.rating}</span>
-            </div>
-            <span className="w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-gray-300"></span>
-            <span>{group.totalSold}+ sold</span>
-          </div>
+
         </div>
       </div>
     </Link>

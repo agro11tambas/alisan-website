@@ -27,7 +27,7 @@ export default function CartPage() {
           <p className="text-gray-500 text-sm mb-4 max-w-md">
             Discover our latest products and promotions.
           </p>
-          <Link href="/products" className="h-10 px-6 flex items-center justify-center bg-[#0021F3] text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors">
+          <Link href="/products" className="h-10 px-6 flex items-center justify-center bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors">
             Continue Shopping
           </Link>
         </div>
@@ -71,7 +71,7 @@ export default function CartPage() {
                         
                         {item.type === 'bundle' && item.addOnProductName && (
                           <div className="mt-1">
-                            <p className="text-sm text-blue-600">+ {item.addOnProductName}</p>
+                            <p className="text-sm text-primary">+ {item.addOnProductName}</p>
                           </div>
                         )}
 
@@ -129,12 +129,12 @@ export default function CartPage() {
                   <span className="text-sm text-gray-900 font-medium">Total Harga</span>
                   <span className="text-base font-bold text-primary">Rp {cart.getSubtotal().toLocaleString('id-ID')}</span>
                 </div>
-                <Link 
-                  href="/checkout"
-                  className="w-full h-10 flex items-center justify-center bg-[#0021F3] text-white text-sm font-medium rounded-md hover:bg-[#0021F3]/90 transition-colors"
-                >
-                  Checkout ({cart.getTotalCount()})
-                </Link>
+                <Link
+                href="/checkout"
+                className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3.5 px-4 rounded-xl font-bold hover:bg-primary/90 transition-all active:scale-[0.98] shadow-sm hover:shadow"
+              >
+                Checkout ({cart.items.length})
+              </Link>
               </div>
             </div>
 
@@ -152,9 +152,9 @@ export default function CartPage() {
             </div>
             <Link 
               href="/checkout"
-              className="h-10 px-5 flex items-center justify-center bg-[#0021F3] text-white text-sm font-medium rounded-md hover:bg-[#0021F3]/90 transition-colors w-auto"
+              className="h-10 px-5 flex items-center justify-center bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors w-auto"
             >
-              Checkout ({cart.getTotalCount()})
+              Checkout ({cart.items.length})
             </Link>
           </div>
         </div>

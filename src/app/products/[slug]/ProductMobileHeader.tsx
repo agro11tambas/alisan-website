@@ -1,16 +1,46 @@
 "use client";
 
-import { ArrowLeft, Search, Share2, ShoppingCart, MoreVertical } from "lucide-react";
+import { ArrowLeft, Search, Share2, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/stores/useCartStore";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 export default function ProductMobileHeader() {
   const router = useRouter();
-  const cartCount = useCartStore((state) => state.getTotalCount());
+  const cartCount = useCartStore((state) => state.items.length);
   const [isMounted, setIsMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: document.title,
+          url: url,
+        });
+      } catch (err) {
+        // User cancelled or share failed silently
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Tautan disalin ke papan klip");
+      } catch (err) {
+        toast.error("Gagal menyalin tautan");
+      }
+    }
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -26,37 +56,43 @@ export default function ProductMobileHeader() {
         }
       `}</style>
       
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm h-12 flex items-center justify-between px-2 border-b border-gray-100 shadow-sm">
-        <div className="flex items-center">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm h-14 flex items-center justify-between px-2 gap-2 border-b border-gray-100 shadow-sm">
+        <button 
+          onClick={() => router.back()}
+          className="w-10 h-10 flex-shrink-0 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <ArrowLeft size={22} />
+        </button>
+        
+        <form onSubmit={handleSearch} className="flex-1 relative">
+          <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <Search size={16} />
+          </button>
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari..." 
+            className="w-full h-9 pl-9 pr-4 text-sm bg-gray-100 border-none outline-none focus:ring-1 focus:ring-primary/20 rounded-full"
+          />
+        </form>
+        
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button 
-            onClick={() => router.back()}
+            onClick={handleShare}
             className="w-10 h-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <ArrowLeft size={22} />
-          </button>
-        </div>
-        
-        <div className="flex items-center gap-0.5">
-          <button className="w-9 h-9 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-full transition-colors">
-            <Search size={20} />
-          </button>
-          
-          <button className="w-9 h-9 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-full transition-colors">
             <Share2 size={20} />
           </button>
           
-          <Link href="/cart" className="relative w-9 h-9 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-full transition-colors">
+          <Link href="/cart" className="relative w-10 h-10 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-full transition-colors">
             <ShoppingCart size={20} />
             {isMounted && cartCount > 0 && (
-              <Badge className="absolute top-0 right-0 px-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-primary text-white text-[9px] border border-white">
+              <Badge className="absolute top-1 right-1 px-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-primary text-white text-[9px] border border-white">
                 {cartCount}
               </Badge>
             )}
           </Link>
-          
-          <button className="w-9 h-9 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-full transition-colors">
-            <MoreVertical size={20} />
-          </button>
         </div>
       </div>
     </>

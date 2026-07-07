@@ -10,6 +10,8 @@ import * as z from "zod";
 import { ShoppingBag, ChevronRight, MessageCircle, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { informationService } from "@/services/informationService";
+import { orderService } from "@/services/orderService";
 
 const addressSchema = z.object({
   recipientName: z.string().min(2, "Name is required"),
@@ -129,7 +131,7 @@ export default function CheckoutPage() {
     setEditingAddressId(null);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     const selectedAddress = addressStore.addresses.find(a => a.id === selectedAddressId);
     
     if (!selectedAddress) {
@@ -140,46 +142,95 @@ export default function CheckoutPage() {
     let message = `*ORDER SUMMARY*\n`;
     message += `-------------------------\n`;
     message += `*Customer Info:*\n`;
-    message += `- Name: ${selectedAddress.recipientName}\n`;
-    message += `- WA: ${selectedAddress.whatsappNumber}\n`;
+    message += `👤 Nama: ${selectedAddress.recipientName}\n`;
+    message += `📱 WA: ${selectedAddress.whatsappNumber}\n`;
     if (selectedAddress.businessName) {
-      message += `- Business: ${selectedAddress.businessName}\n`;
+      message += `🏢 Bisnis: ${selectedAddress.businessName}\n`;
     }
-    message += `- Address: ${selectedAddress.completeAddress}\n`;
+    message += `📍 Alamat: ${selectedAddress.completeAddress}\n`;
     if (selectedAddress.googleMapsLink) {
-      message += `- Maps: ${selectedAddress.googleMapsLink}\n`;
+      message += `🗺️ Maps: ${selectedAddress.googleMapsLink}\n`;
     }
-    message += `\n*Items:*\n`;
+    message += `\n*Daftar Pesanan:*\n\n`;
     
-    cart.items.forEach(item => {
+    cart.items.forEach((item, index) => {
       if (item.type === 'bundle') {
-        message += `- ${item.groupName} - ${item.mainProductName}\n`;
-        message += `  SKU: ${item.mainSku}\n`;
-        message += `  Add-on: ${item.addOnProductName}\n`;
-        message += `  Add-on SKU: ${item.addOnSku}\n`;
-        message += `  Qty: ${item.quantity}\n`;
-        message += `  Unit total: Rp ${item.price.toLocaleString('id-ID')}\n`;
-        message += `  Subtotal: Rp ${(item.price * item.quantity).toLocaleString('id-ID')}\n\n`;
+        message += `${index + 1}. *${item.groupName} - ${item.mainProductName}*\n`;
+        message += `   └ SKU: ${item.mainSku}\n`;
+        message += `   └ Tambahan: ${item.addOnProductName}\n`;
+        message += `   └ Qty: ${item.quantity}\n`;
+        message += `   └ Harga Satuan: Rp ${item.price.toLocaleString('id-ID')}\n`;
+        message += `   └ *Subtotal: Rp ${(item.price * item.quantity).toLocaleString('id-ID')}*\n\n`;
       } else {
-        message += `- ${item.groupName} - ${item.mainProductName}\n`;
-        message += `  SKU: ${item.mainSku}\n`;
-        message += `  Qty: ${item.quantity}\n`;
-        message += `  Unit price: Rp ${item.price.toLocaleString('id-ID')}\n`;
-        message += `  Subtotal: Rp ${(item.price * item.quantity).toLocaleString('id-ID')}\n\n`;
+        message += `${index + 1}. *${item.groupName} - ${item.mainProductName}*\n`;
+        message += `   └ SKU: ${item.mainSku}\n`;
+        message += `   └ Qty: ${item.quantity}\n`;
+        message += `   └ Harga Satuan: Rp ${item.price.toLocaleString('id-ID')}\n`;
+        message += `   └ *Subtotal: Rp ${(item.price * item.quantity).toLocaleString('id-ID')}*\n\n`;
       }
     });
     
     message += `-------------------------\n`;
-    message += `*Subtotal:* Rp ${cart.getSubtotal().toLocaleString('id-ID')}\n`;
-    message += `*Total:* Rp ${cart.getSubtotal().toLocaleString('id-ID')}\n\n`;
-    message += `Thank you!`;
+    message += `*Total Pembayaran: Rp ${cart.getSubtotal().toLocaleString('id-ID')}*\n\n`;
+    message += `Tolong di proses`;
 
-    const adminNumber = process.env.NEXT_PUBLIC_WHATSAPP_ADMIN_NUMBER || "6281234567890";
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${adminNumber}?text=${encodedMessage}`;
+    try {
+      // POST order to backend API
+      const orderPayload = {
+        shipping: {
+          business_name: selectedAddress.businessName || "",
+          address: selectedAddress.completeAddress,
+          google_maps: selectedAddress.googleMapsLink || "",
+        },
+        order_date: new Date().toISOString(),
+        payment_method: "WhatsApp",
+        paid_amount: 0,
+        items: cart.items.map(item => ({
+          ecommerce_product_id: Number(item.productGroupId),
+          ecommerce_variant_combination_id: item.combinationId ? Number(item.combinationId) : undefined,
+          variant_option_id: (!item.combinationId && String(item.mainProductId) !== String(item.productGroupId)) ? Number(item.mainProductId) : undefined,
+          quantity: item.quantity,
+          mode: "printing", // Add default mode as required by API
+        })),
+      };
+      
+      await orderService.createOrder(orderPayload);
+      
+      const info = await informationService.getInformation();
+      let adminNumber = info?.phone_number ? info.phone_number.replace(/\D/g, '') : "6281234567890";
+      
+      // Ensure the number starts with 62 instead of 0 for Indonesian numbers
+      if (adminNumber.startsWith('0')) {
+        adminNumber = '62' + adminNumber.substring(1);
+      }
 
-    cart.clearCart();
-    window.location.href = whatsappUrl;
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${adminNumber}&text=${encodedMessage}`;
+
+      cart.clearCart();
+      
+      // Try to open in a new tab
+      const newWindow = window.open(whatsappUrl, '_blank');
+      
+      // If popup blocker prevents it, fallback to redirecting current tab
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        window.location.assign(whatsappUrl);
+      } else {
+        // Redirect the original tab to home page
+        router.push('/');
+      }
+    } catch (error: any) {
+      console.error("Failed to create order:", error);
+      let errorMessage = "Terjadi kesalahan saat membuat pesanan, silakan coba lagi.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+        if (error.response.data.errors) {
+          const details = Object.values(error.response.data.errors).flat().join('\n');
+          errorMessage += '\n' + details;
+        }
+      }
+      alert(errorMessage);
+    }
   };
 
   return (
@@ -219,7 +270,7 @@ export default function CheckoutPage() {
                       key={addr.id}
                       onClick={() => setSelectedAddressId(addr.id)}
                       className={`relative px-3 py-3 border-b border-gray-50 last:border-0 cursor-pointer flex items-start gap-3 transition-colors ${
-                        selectedAddressId === addr.id ? 'bg-blue-50/40' : 'hover:bg-gray-50'
+                        selectedAddressId === addr.id ? 'bg-primary/5' : 'hover:bg-gray-50'
                       }`}
                     >
                       {/* Radio button circle */}
@@ -364,7 +415,7 @@ export default function CheckoutPage() {
                <button
                   onClick={handleCheckout}
                   disabled={addressStore.addresses.length === 0 || !selectedAddressId || showAddressForm}
-                  className="w-full h-10 px-5 bg-[#0021F3] text-white text-sm font-medium rounded-md hover:bg-[#0021F3]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="w-full h-10 px-5 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   <MessageCircle size={16} />
                   Checkout via WhatsApp
@@ -384,7 +435,7 @@ export default function CheckoutPage() {
         <button
           onClick={handleCheckout}
           disabled={addressStore.addresses.length === 0 || !selectedAddressId || showAddressForm}
-          className="h-10 px-5 bg-[#0021F3] text-white text-sm font-medium rounded-md hover:bg-[#0021F3]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 w-auto shrink-0"
+          className="h-10 px-5 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 w-auto shrink-0"
         >
           <MessageCircle size={16} />
           Buat Pesanan

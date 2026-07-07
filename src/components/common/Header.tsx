@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingCart, User, Menu, Search, X, ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
 import SearchBar from "./SearchBar";
@@ -19,7 +20,7 @@ export default function Header() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   
-  const cartCount = useCartStore((state) => state.getTotalCount());
+  const cartCount = useCartStore((state) => state.items.length);
   const { customer, isLoggedIn } = useCurrentCustomer();
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function Header() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products..."
+                  placeholder="Cari produk sablon..."
                   className="w-full h-9 bg-gray-100 rounded-full pl-4 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
                 />
                 {searchQuery && (
@@ -114,13 +115,15 @@ export default function Header() {
               </SheetContent>
             </Sheet>
 
-            <Link href="/" className="flex items-center gap-1.5">
-              <div className="w-7 h-7 bg-primary rounded flex items-center justify-center text-white font-bold text-lg tracking-tighter">
-                A
-              </div>
-              <span className="text-lg font-bold tracking-tight text-primary hidden sm:block">
-                Alisan
-              </span>
+            <Link href="/" className="hidden md:flex items-center">
+              <Image 
+                src="/image/1751788462_LOGO-ALISAN_cropped.png" 
+                alt="Alisan Logo" 
+                width={150} 
+                height={50} 
+                className="h-9 w-auto object-contain"
+                priority
+              />
             </Link>
           </div>
 
@@ -171,13 +174,13 @@ export default function Header() {
                     className="hidden md:flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-primary transition-colors min-h-[44px]"
                   >
                     <User size={20} />
-                    <span>Login</span>
+                    <span>Masuk</span>
                   </Link>
                   <Link
                     href="/login"
                     className="md:hidden flex items-center justify-center px-2 h-7 bg-primary text-white text-[11px] font-bold rounded shadow-sm ml-1.5"
                   >
-                    Login
+                    Masuk
                   </Link>
                 </div>
               )}

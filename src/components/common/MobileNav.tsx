@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { 
@@ -17,7 +18,8 @@ import {
   Info, 
   Phone,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  X
 } from "lucide-react";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
 import { categoryService } from "@/services/categoryService";
@@ -26,6 +28,36 @@ import { Category } from "@/types";
 interface MobileNavProps {
   onClose: () => void;
 }
+
+const NavLink = ({ 
+  href, 
+  icon: Icon, 
+  label,
+  onClose
+}: { 
+  href: string, 
+  icon: any, 
+  label: string,
+  onClose: () => void 
+}) => {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+  
+  return (
+    <Link 
+      href={href} 
+      onClick={onClose}
+      className={`flex items-center gap-4 px-4 h-12 transition-colors ${
+        isActive 
+          ? "bg-primary/10 border-l-4 border-primary text-primary font-semibold" 
+          : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
+      }`}
+    >
+      <Icon size={20} className={isActive ? "text-primary" : "text-gray-500"} />
+      <span>{label}</span>
+    </Link>
+  );
+};
 
 export default function MobileNav({ onClose }: MobileNavProps) {
   const pathname = usePathname();
@@ -37,32 +69,30 @@ export default function MobileNav({ onClose }: MobileNavProps) {
     categoryService.getCategories().then(setCategories);
   }, []);
 
-  const NavLink = ({ href, icon: Icon, label }: { href: string, icon: any, label: string }) => {
-    const isActive = pathname === href;
-    
-    return (
-      <Link 
-        href={href} 
-        onClick={onClose}
-        className={`flex items-center gap-4 px-4 h-12 transition-colors ${
-          isActive 
-            ? "bg-primary/10 border-l-4 border-primary text-primary font-semibold" 
-            : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
-        }`}
-      >
-        <Icon size={20} className={isActive ? "text-primary" : "text-gray-500"} />
-        <span>{label}</span>
-      </Link>
-    );
-  };
-
   return (
     <div className="flex flex-col h-full bg-white">
+      {/* Mobile Logo */}
+      <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
+        <Link href="/" onClick={onClose} className="flex items-center">
+          <Image 
+            src="/image/1751788462_LOGO-ALISAN_cropped.png" 
+            alt="Alisan Logo" 
+            width={120} 
+            height={40} 
+            className="h-8 w-auto object-contain"
+            priority
+          />
+        </Link>
+        <button onClick={onClose} className="p-2 -mr-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100">
+          <X size={20} />
+        </button>
+      </div>
+
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto py-3">
         <div className="flex flex-col mb-4">
-          <NavLink href="/" icon={Home} label="Home" />
-          <NavLink href="/products" icon={Package} label="Products" />
+          <NavLink href="/" icon={Home} label="Beranda" onClose={onClose} />
+          <NavLink href="/products" icon={Package} label="Produk" onClose={onClose} />
           
           {/* Categories Accordion */}
           <div>
@@ -72,7 +102,7 @@ export default function MobileNav({ onClose }: MobileNavProps) {
             >
               <div className="flex items-center gap-4">
                 <LayoutGrid size={20} className="text-gray-500" />
-                <span className="font-medium">Categories</span>
+                <span className="font-medium">Kategori</span>
               </div>
               {isCategoriesOpen ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
             </button>
@@ -83,7 +113,7 @@ export default function MobileNav({ onClose }: MobileNavProps) {
                 {categories.map(cat => (
                   <Link 
                     key={cat.id}
-                    href={`/products?category=${cat.id}`}
+                    href={`/products?category=${cat.slug}`}
                     onClick={onClose}
                     className="flex items-center px-4 py-2.5 pl-[52px] h-11 text-sm text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors font-medium"
                   >
@@ -94,36 +124,18 @@ export default function MobileNav({ onClose }: MobileNavProps) {
             </div>
           </div>
 
-          <NavLink href="/cart" icon={ShoppingCart} label="Cart" />
+          <NavLink href="/cart" icon={ShoppingCart} label="Keranjang" onClose={onClose} />
           
           {isLoggedIn && (
             <>
               <div className="h-px bg-gray-100 my-2 mx-4"></div>
-              <NavLink href="/account/orders" icon={ClipboardList} label="My Orders" />
-              <NavLink href="/account/addresses" icon={MapPin} label="My Addresses" />
-              <NavLink href="/account" icon={User} label="Profile" />
+              <NavLink href="/account/orders" icon={ClipboardList} label="Pesanan Saya" onClose={onClose} />
+              <NavLink href="/account/addresses" icon={MapPin} label="Alamat Saya" onClose={onClose} />
+              <NavLink href="/account" icon={User} label="Profil" onClose={onClose} />
             </>
           )}
         </div>
 
-        {/* Footer Navigation */}
-        <div className="border-t border-gray-100 pt-5 pb-8 px-4">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Support & Info</p>
-          <div className="flex flex-col gap-1">
-            <Link href="#" className="flex items-center gap-3 px-2 h-10 text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-              <Settings size={18} className="text-gray-400" /> Settings
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-2 h-10 text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-              <HelpCircle size={18} className="text-gray-400" /> Help Center
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-2 h-10 text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-              <Info size={18} className="text-gray-400" /> About Alisan
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-2 h-10 text-sm font-medium text-gray-600 hover:text-primary transition-colors">
-              <Phone size={18} className="text-gray-400" /> Contact Us
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );

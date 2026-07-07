@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { ProductGroup } from "@/types";
 import ProductGallery from "./ProductGallery";
 import ProductActions from "./ProductActions";
-import { Star } from "lucide-react";
+
 
 export default function ProductDetailClient({ group }: { group: ProductGroup }) {
   const defaultImage = group.image || group.gallery?.[0] || "/image/Placeholder.jpg";
@@ -42,16 +42,7 @@ export default function ProductDetailClient({ group }: { group: ProductGroup }) 
             {group.name}
           </h1>
 
-          <div className="flex items-center gap-2 text-[10px] md:text-sm mb-2 md:mb-1.5 md:pb-1.5 md:border-b md:border-gray-100">
-            <div className="flex items-center gap-1 text-yellow-500 font-medium bg-yellow-50 px-1.5 py-0.5 rounded">
-              <Star size={12} className="md:w-[14px] md:h-[14px]" fill="currentColor" />
-              <span>{group.rating}</span>
-            </div>
-            <div className="w-px h-2 bg-gray-300"></div>
-            <div className="text-gray-600">
-              <span className="font-semibold text-gray-900">{group.totalSold}+</span> Sold
-            </div>
-          </div>
+
         </div>
 
         <ProductActions group={group} onImageChange={handleImageChange} />
