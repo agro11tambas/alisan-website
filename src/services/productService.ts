@@ -95,9 +95,9 @@ export const productService = {
       const groups = await fetchAllProductGroups();
       const allLids: AddOnProduct[] = [];
       const seenIds = new Set();
-      groups.forEach(g => {
+      groups.forEach((g: any) => {
         if (g._lids) {
-          g._lids.forEach(lid => {
+          g._lids.forEach((lid: AddOnProduct) => {
             if (!seenIds.has(lid.id)) {
               seenIds.add(lid.id);
               allLids.push(lid);
