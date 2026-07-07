@@ -6,8 +6,8 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
     let products: Product[] = [];
     let addOns: AddOnProduct[] = [];
 
-    const productOptionGroup = ecProduct.variant_groups?.find((g: any) => g.name.toUpperCase().includes("PRODUCT OPTION"));
-    const lidOptionGroup = ecProduct.variant_groups?.find((g: any) => g.name.toUpperCase().includes("LID OPTION"));
+    const productOptionGroup = ecProduct.variant_groups?.[0];
+    const lidOptionGroup = ecProduct.variant_groups?.[1];
 
     // Prefer alisan_code for image if it exists, fallback to image or placeholder
     const imageUrl = ecProduct.alisan_code || ecProduct.image || "/image/Placeholder.jpg";
@@ -69,6 +69,8 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
       totalSold: 0,
       image: imageUrl,
       gallery: ecProduct.alisan_code ? [ecProduct.alisan_code] : (ecProduct.image ? [ecProduct.image] : ["/image/Placeholder.jpg"]),
+      productGroupName: productOptionGroup?.name || "Product Option",
+      lidGroupName: lidOptionGroup?.name || "Lid Option",
       products,
       _lids: addOns,
       _combinations: combinations,

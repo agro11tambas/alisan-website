@@ -44,6 +44,8 @@ export type ProductGroup = {
   categories?: string[];
   rating: number;
   totalSold: number;
+  productGroupName?: string;
+  lidGroupName?: string;
   products: Product[];
 };
 

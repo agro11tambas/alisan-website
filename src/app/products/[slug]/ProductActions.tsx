@@ -157,7 +157,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       {/* Main Options */}
       <div className="border-t-[6px] border-gray-100 md:border-t md:border-gray-100 pt-3 md:pt-3 pb-2 px-3 md:px-0">
         <div className="flex justify-between items-center mb-2.5">
-          <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">Product Option</h3>
+          <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">{group.productGroupName || "Product Option"}</h3>
           <span className="text-[10px] text-gray-500 md:hidden">Pilih &gt;</span>
         </div>
         <div className="flex flex-wrap gap-2 md:gap-2 pb-1">
@@ -188,7 +188,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       {lids.length > 0 && selectedProduct && (
         <div className="border-t-[6px] border-gray-100 md:border-t md:border-gray-100 pt-3 md:pt-3 pb-2 px-3 md:px-0">
           <div className="flex justify-between items-center mb-2.5">
-            <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">Lid Option</h3>
+            <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">{group.lidGroupName || "Lid Option"}</h3>
           </div>
           <div className="flex flex-wrap gap-2 md:gap-2 pb-1">
             <button
@@ -199,7 +199,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                   : 'border-gray-300 text-gray-700 hover:border-primary/50'
               }`}
             >
-              No Lid
+              Tanpa {group.lidGroupName || "Lid"}
             </button>
             {lids.map((lid) => {
               const isSelected = selectedLid?.id === lid.id;
@@ -235,7 +235,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
               <span className="text-gray-500">Selected: </span>
               <span className="font-medium text-gray-900">{selectedProduct.name}</span>
               {lids.length > 0 && (
-                <span className="text-gray-500"> · Lid: <span className="font-medium text-gray-900">{selectedLid ? selectedLid.name : "No Lid"}</span></span>
+                <span className="text-gray-500"> · {group.lidGroupName || "Lid"}: <span className="font-medium text-gray-900">{selectedLid ? selectedLid.name : `Tanpa ${group.lidGroupName || "Lid"}`}</span></span>
               )}
             </div>
             <span className="font-bold text-primary whitespace-nowrap">Rp {displayPrice.toLocaleString('id-ID')}</span>
@@ -334,7 +334,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
           
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
             <div>
-              <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">Varian Cup</h3>
+              <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">{group.productGroupName || "Varian Cup"}</h3>
               <div className="flex flex-wrap gap-2">
                 {group.products.map((p) => {
                   const isSelected = selectedProduct?.id === p.id;
@@ -362,7 +362,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
             {lids.length > 0 && selectedProduct && (
               <div>
-                <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">Varian Tutup</h3>
+                <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">{group.lidGroupName || "Varian Tutup"}</h3>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => handleSelectLid(null)}
@@ -372,7 +372,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                         : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
                     }`}
                   >
-                    Tanpa Tutup
+                    Tanpa {group.lidGroupName || "Tutup"}
                   </button>
                   {lids.map((lid) => {
                     const isSelected = selectedLid?.id === lid.id;
