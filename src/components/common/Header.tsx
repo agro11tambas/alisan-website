@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, User, Menu, Search, X, ArrowLeft } from "lucide-react";
+import { ShoppingCart, User, Menu, Search, X, ArrowLeft, Settings, LogOut } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
 import SearchBar from "./SearchBar";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,15 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import MobileNav from "./MobileNav";
+import { api } from "@/services/api";
 
 export default function Header() {
   const [isMounted, setIsMounted] = useState(false);
@@ -44,6 +52,20 @@ export default function Header() {
     if (searchQuery.trim()) {
       router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setIsSearchOpen(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/ecommerce/auth/logout");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      localStorage.removeItem("customer_token");
+      router.push("/login");
+      router.refresh();
+      // force reload to clear states
+      window.location.reload();
     }
   };
 
@@ -161,12 +183,27 @@ export default function Header() {
 
             <div className="flex items-center ml-1">
               {isLoggedIn ? (
-                <Link
-                  href="/account"
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-bold text-xs"
-                >
-                  {customer?.name.charAt(0).toUpperCase()}
-                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors outline-none focus:ring-2 focus:ring-primary/20">
+                    {customer?.name.charAt(0).toUpperCase()}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 mt-1">
+                    <div className="flex flex-col px-2 py-1.5 mb-1">
+                      <span className="text-sm font-semibold truncate">{customer?.name}</span>
+                      <span className="text-xs text-gray-500 truncate">{customer?.whatsapp_number}</span>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/account')} className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Pengaturan Akun</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Keluar</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <div className="flex items-center">
                   <Link

@@ -14,8 +14,6 @@ import { informationService } from "@/services/informationService";
 import { orderService } from "@/services/orderService";
 
 const addressSchema = z.object({
-  recipientName: z.string().min(2, "Name is required"),
-  whatsappNumber: z.string().min(8, "Valid WhatsApp number is required"),
   businessName: z.string().optional(),
   completeAddress: z.string().min(10, "Please provide a complete address"),
   googleMapsLink: z.string().optional(),
@@ -70,8 +68,6 @@ export default function CheckoutPage() {
   const handleOpenNewForm = () => {
     setEditingAddressId(null);
     reset({
-      recipientName: "",
-      whatsappNumber: "",
       businessName: "",
       completeAddress: "",
       googleMapsLink: "",
@@ -86,8 +82,6 @@ export default function CheckoutPage() {
     if (addr) {
       setEditingAddressId(id);
       reset({
-        recipientName: addr.recipientName,
-        whatsappNumber: addr.whatsappNumber,
         businessName: addr.businessName || "",
         completeAddress: addr.completeAddress,
         googleMapsLink: addr.googleMapsLink || "",
@@ -104,8 +98,6 @@ export default function CheckoutPage() {
 
   const handleSaveAddress = (data: AddressFormValues) => {
     const addressData = {
-      recipientName: data.recipientName,
-      whatsappNumber: data.whatsappNumber,
       businessName: data.businessName,
       completeAddress: data.completeAddress,
       googleMapsLink: data.googleMapsLink,
@@ -142,8 +134,6 @@ export default function CheckoutPage() {
     let message = `*ORDER SUMMARY*\n`;
     message += `-------------------------\n`;
     message += `*Customer Info:*\n`;
-    message += `👤 Nama: ${selectedAddress.recipientName}\n`;
-    message += `📱 WA: ${selectedAddress.whatsappNumber}\n`;
     if (selectedAddress.businessName) {
       message += `🏢 Bisnis: ${selectedAddress.businessName}\n`;
     }
@@ -178,8 +168,6 @@ export default function CheckoutPage() {
       // POST order to backend API
       const orderPayload = {
         shipping: {
-          recipient_name: selectedAddress.recipientName,
-          whatsapp_number: selectedAddress.whatsappNumber,
           business_name: selectedAddress.businessName || "",
           address: selectedAddress.completeAddress,
           google_maps: selectedAddress.googleMapsLink || "",
@@ -284,12 +272,11 @@ export default function CheckoutPage() {
 
                       <div className="flex-1 min-w-0 pr-8">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-semibold text-gray-900">{addr.businessName || addr.recipientName}</span>
+                          <span className="text-sm font-semibold text-gray-900">{addr.businessName || 'Alamat Baru'}</span>
                           {addr.isDefault && (
                             <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[10px] uppercase tracking-wider font-bold rounded">Utama</span>
                           )}
                         </div>
-                        <div className="text-sm text-gray-600 mb-0.5">{addr.whatsappNumber}</div>
                         <div className="text-sm text-gray-600 line-clamp-2">{addr.completeAddress}</div>
                       </div>
 
@@ -308,14 +295,6 @@ export default function CheckoutPage() {
                 <div className="p-3">
                   <h3 className="text-sm font-bold text-gray-900 mb-3">{editingAddressId ? 'Edit Address' : 'Add New Address'}</h3>
                   <form id="address-form" onSubmit={handleSubmit(handleSaveAddress)} className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <input {...register("recipientName")} className={`w-full h-11 px-3 text-sm border rounded-md focus:ring-1 focus:ring-primary/50 outline-none ${errors.recipientName ? 'border-red-500' : 'border-gray-300'}`} placeholder="Recipient Name *" />
-                      </div>
-                      <div>
-                        <input {...register("whatsappNumber")} className={`w-full h-11 px-3 text-sm border rounded-md focus:ring-1 focus:ring-primary/50 outline-none ${errors.whatsappNumber ? 'border-red-500' : 'border-gray-300'}`} placeholder="WhatsApp Number *" />
-                      </div>
-                    </div>
                     <div>
                       <input {...register("businessName")} className="w-full h-11 px-3 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/50 outline-none" placeholder="Business Name (Optional)" />
                     </div>

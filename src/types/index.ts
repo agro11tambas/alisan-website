@@ -78,8 +78,6 @@ export type CartItem = {
 
 export interface Address {
   id: string;
-  recipientName: string;
-  whatsappNumber: string;
   businessName?: string;
   completeAddress: string;
   googleMapsLink?: string;
