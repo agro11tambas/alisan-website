@@ -333,28 +333,23 @@ export default function CheckoutPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">{item.displayName}</h4>
-                      {item.type === 'bundle' && item.addOnProductName && (
-                         <div className="text-sm text-primary mt-1">+ {item.addOnProductName}</div>
-                      )}
-                      <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-sm font-semibold text-gray-900">
-                          Rp {item.price.toLocaleString('id-ID')}
+                      <h4 className="text-base font-bold text-gray-900 line-clamp-2 leading-tight">{item.groupName}</h4>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {item.mainProductName}
+                        {item.type === 'bundle' && item.addOnProductName && ` + ${item.addOnProductName}`}
+                        {' - Rp ' + item.price.toLocaleString('id-ID')}
+                      </div>
+                      <div className="mt-1.5">
+                        <span className="text-sm font-semibold text-primary">
+                          Rp {item.price.toLocaleString('id-ID')} x {item.quantity}
                         </span>
-                        <span className="text-sm text-gray-500">x{item.quantity}</span>
                       </div>
                     </div>
                  </div>
                ))}
             </div>
 
-            {/* 3. ADDITIONAL SECTION */}
-            <div className="bg-white border-b sm:border sm:rounded-md border-gray-200 mb-2 sm:mb-4 flex items-center justify-between h-11 px-3">
-               <span className="text-sm text-gray-900">Pesan untuk Penjual</span>
-               <span className="text-sm text-gray-400 flex items-center gap-1">
-                 Silakan tinggalkan pesan... <ChevronRight size={16} />
-               </span>
-            </div>
+
 
             {/* 4. ORDER SUMMARY (Mobile) */}
             <div className="bg-white border-b sm:border sm:rounded-md border-gray-200 px-3 py-3 space-y-2 lg:hidden">

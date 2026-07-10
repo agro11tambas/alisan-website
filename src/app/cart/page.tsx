@@ -65,20 +65,20 @@ export default function CartPage() {
                       
                       {/* Product Info */}
                       <div className="flex flex-col flex-1 min-w-0 pr-8">
-                        <Link href={`/products/${item.productGroupId}`} className="text-sm font-medium text-gray-900 hover:text-primary transition-colors line-clamp-2 leading-tight">
-                          {item.groupName} - {item.mainProductName}
+                        <Link href={`/products/${item.productGroupId}`} className="text-base font-bold text-gray-900 hover:text-primary transition-colors line-clamp-2 leading-tight">
+                          {item.groupName}
                         </Link>
                         
-                        {item.type === 'bundle' && item.addOnProductName && (
-                          <div className="mt-1">
-                            <p className="text-sm text-primary">+ {item.addOnProductName}</p>
-                          </div>
-                        )}
+                        <div className="mt-1 text-sm text-gray-600">
+                          {item.mainProductName}
+                          {item.type === 'bundle' && item.addOnProductName && ` + ${item.addOnProductName}`}
+                          {' - Rp ' + item.price.toLocaleString('id-ID')}
+                        </div>
 
                         {/* Price Section */}
-                        <div className="mt-2">
-                          <div className="text-base font-semibold text-primary leading-tight">
-                            Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                        <div className="mt-1.5">
+                          <div className="text-sm font-semibold text-primary leading-tight">
+                            Rp {item.price.toLocaleString('id-ID')} x {item.quantity}
                           </div>
                         </div>
 
