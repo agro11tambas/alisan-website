@@ -55,6 +55,7 @@ export type CartItem = {
 
   productGroupId?: string;
   groupName?: string;
+  groupSlug?: string;
 
   mainProductId: string;
   mainProductName: string;

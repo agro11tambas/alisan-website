@@ -59,6 +59,7 @@ export const useCartStore = create<CartState>()(
               
               productGroupId: group.id,
               groupName: group.name,
+              groupSlug: group.slug,
               
               mainProductId: product.id,
               mainProductName: product.name,

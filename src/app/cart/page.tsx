@@ -65,7 +65,7 @@ export default function CartPage() {
                       
                       {/* Product Info */}
                       <div className="flex flex-col flex-1 min-w-0 pr-8">
-                        <Link href={`/products/${item.productGroupId}`} className="text-base font-bold text-gray-900 hover:text-primary transition-colors line-clamp-2 leading-tight">
+                        <Link href={`/products/${item.groupSlug || item.productGroupId}`} className="text-base font-bold text-gray-900 hover:text-primary transition-colors line-clamp-2 leading-tight">
                           {item.groupName}
                         </Link>
                         
@@ -78,7 +78,7 @@ export default function CartPage() {
                         {/* Price Section */}
                         <div className="mt-1.5">
                           <div className="text-sm font-semibold text-primary leading-tight">
-                            Rp {item.price.toLocaleString('id-ID')} x {item.quantity}
+                            Rp {(item.price * item.quantity).toLocaleString('id-ID')}
                           </div>
                         </div>
 

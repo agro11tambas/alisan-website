@@ -341,7 +341,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="mt-1.5">
                         <span className="text-sm font-semibold text-primary">
-                          Rp {item.price.toLocaleString('id-ID')} x {item.quantity}
+                          Rp {(item.price * item.quantity).toLocaleString('id-ID')}
                         </span>
                       </div>
                     </div>
