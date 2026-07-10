@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Disable dark mode completely */
+@custom-variant dark (&:is(.never));
+
+
 
 @theme inline {
   --color-background: var(--background);
