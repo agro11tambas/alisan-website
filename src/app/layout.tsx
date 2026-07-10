@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alisan | Spesialis Sablon Cup Plastik",
-  description: "Pusat penyedia dan jasa sablon cup plastik profesional. Kami hadir untuk membantu membranding kemasan bisnis minuman Anda dengan kualitas sablon terbaik.",
+  title: "Alisan",
+  description: "",
 };
 
 export default function RootLayout({
