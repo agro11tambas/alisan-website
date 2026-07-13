@@ -6,6 +6,8 @@ import { ProductGroup } from '@/types';
 export default function ProductCard({ group }: { group: ProductGroup }) {
   // Calculate starting price from available products
   const startingPrice = Math.min(...group.products.map(p => p.salePrice || p.price));
+  const startingOriginalPrice = Math.min(...group.products.map(p => p.price));
+  const hasDiscount = startingPrice < startingOriginalPrice;
   
   return (
     <Link href={`/products/${group.slug}`} className="group bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col h-full">
@@ -19,6 +21,11 @@ export default function ProductCard({ group }: { group: ProductGroup }) {
             className="object-contain group-hover:scale-105 transition-transform duration-500"
           />
         )}
+        {hasDiscount && (
+          <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded">
+            Promo
+          </div>
+        )}
       </div>
       <div className="p-1.5 md:p-3 flex flex-col flex-1 gap-1 md:gap-2">
         <h3 className="text-xs md:text-sm text-gray-800 font-medium line-clamp-2 group-hover:text-primary transition-colors leading-tight">
@@ -28,9 +35,16 @@ export default function ProductCard({ group }: { group: ProductGroup }) {
         <div className="mt-auto flex flex-col gap-0.5 md:gap-1">
           <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
             <span className="text-[10px] md:text-xs text-gray-500 font-medium">From</span>
-            <span className="text-sm sm:text-lg font-bold text-primary leading-none">
-              Rp {startingPrice.toLocaleString('id-ID')}
-            </span>
+            <div className="flex flex-col">
+              {hasDiscount && (
+                <span className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
+                  Rp {startingOriginalPrice.toLocaleString('id-ID')}
+                </span>
+              )}
+              <span className="text-sm sm:text-lg font-bold text-primary leading-none">
+                Rp {startingPrice.toLocaleString('id-ID')}
+              </span>
+            </div>
           </div>
           
           <div className="text-[10px] md:text-xs text-gray-500 font-medium">

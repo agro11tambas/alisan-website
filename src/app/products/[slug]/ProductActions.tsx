@@ -125,21 +125,39 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
 
 
-  const getCombinationPrice = (productId: string, lidId?: string) => {
+  const getCombinationPricing = (productId: string, lidId?: string) => {
     if (!lidId) return null;
     const combo = (group as any)._combinations?.find(
       (c: any) => String(c.product_option_id) === String(productId) && String(c.lid_option_id) === String(lidId)
     );
-    if (combo && Number(combo.price) > 0) return Number(combo.price);
+    if (combo && Number(combo.price) > 0) {
+      return {
+        price: Number(combo.price),
+        salePrice: combo.salePrice ? Number(combo.salePrice) : undefined
+      };
+    }
     return null;
   };
 
+  const comboPricing = selectedProduct && selectedLid ? getCombinationPricing(selectedProduct.id, selectedLid.id) : null;
+  
   const displayPrice = selectedProduct 
     ? (
-        getCombinationPrice(selectedProduct.id, selectedLid?.id) 
-        || ((selectedProduct.salePrice || selectedProduct.price) + (selectedLid ? (selectedLid.salePrice || selectedLid.price) : 0))
+        comboPricing 
+          ? (comboPricing.salePrice || comboPricing.price)
+          : ((selectedProduct.salePrice || selectedProduct.price) + (selectedLid ? (selectedLid.salePrice || selectedLid.price) : 0))
       )
     : Math.min(...group.products.map(p => p.salePrice || p.price));
+
+  const displayOriginalPrice = selectedProduct
+    ? (
+        comboPricing
+          ? (comboPricing.salePrice ? comboPricing.price : undefined)
+          : ((selectedProduct.salePrice || (selectedLid && selectedLid.salePrice)) 
+              ? (selectedProduct.price + (selectedLid ? selectedLid.price : 0)) 
+              : undefined)
+      )
+    : undefined;
     
   return (
     <div className="mt-2 pb-20 md:pb-0">
@@ -148,6 +166,11 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       <div className="mb-3 px-3 md:px-0">
         <div className="flex items-end gap-1 md:gap-2">
           {!selectedProduct && <span className="text-xs text-gray-500 mb-0.5">From</span>}
+          {displayOriginalPrice && (
+            <span className="text-sm font-medium text-gray-400 line-through mb-1">
+              Rp {displayOriginalPrice.toLocaleString('id-ID')}
+            </span>
+          )}
           <span className="text-2xl font-bold text-primary tracking-tight">
             Rp {displayPrice.toLocaleString('id-ID')}
           </span>
@@ -316,6 +339,11 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                 />
               </div>
               <div className="flex-1 pt-1 pr-6">
+                {displayOriginalPrice && (
+                  <div className="text-xs text-gray-400 line-through">
+                    Rp {displayOriginalPrice.toLocaleString('id-ID')}
+                  </div>
+                )}
                 <div className="text-primary font-bold text-lg mb-0.5">
                   Rp {displayPrice.toLocaleString('id-ID')}
                 </div>

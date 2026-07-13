@@ -19,7 +19,7 @@ export default async function Home() {
         <div className="w-full px-2 sm:container sm:mx-auto sm:px-4">
           <div className="relative rounded-lg md:rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[21/9] md:aspect-[3/1] bg-gray-900 shadow-sm border border-gray-100">
             <Image
-              src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2000&auto=format&fit=crop"
+              src="/images/home-banner.png"
               alt="Promo Banner"
               fill
               className="object-cover opacity-60"

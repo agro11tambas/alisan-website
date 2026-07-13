@@ -12,6 +12,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { informationService } from "@/services/informationService";
 import { orderService } from "@/services/orderService";
+import { Discount, getActiveDiscounts } from "@/services/discountService";
+import { calculateDiscountAmount } from "@/utils/discountUtils";
 
 const addressSchema = z.object({
   businessName: z.string().optional(),
@@ -26,6 +28,7 @@ export default function CheckoutPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
   
   const cart = useCartStore();
   const addressStore = useAddressStore();
@@ -50,6 +53,7 @@ export default function CheckoutPage() {
     if (isMounted && cart.items.length === 0) {
       router.push('/cart');
     }
+    getActiveDiscounts().then(setDiscounts);
   }, [isMounted, cart.items.length, router]);
 
   useEffect(() => {
@@ -161,7 +165,16 @@ export default function CheckoutPage() {
     });
     
     message += `-------------------------\n`;
-    message += `*Total Pembayaran: Rp ${cart.getSubtotal().toLocaleString('id-ID')}*\n\n`;
+    message += `*Subtotal: Rp ${cart.getSubtotal().toLocaleString('id-ID')}*\n`;
+    
+    const discountAmount = calculateDiscountAmount(cart.items, discounts);
+    if (discountAmount > 0) {
+      message += `*Diskon Promo: - Rp ${discountAmount.toLocaleString('id-ID')}*\n`;
+      message += `*Total Pembayaran: Rp ${(cart.getSubtotal() - discountAmount).toLocaleString('id-ID')}*\n\n`;
+    } else {
+      message += `*Total Pembayaran: Rp ${cart.getSubtotal().toLocaleString('id-ID')}*\n\n`;
+    }
+    
     message += `Tolong di proses`;
 
     try {
@@ -361,9 +374,15 @@ export default function CheckoutPage() {
                  <span className="text-sm text-gray-600">Total Ongkos Kirim</span>
                  <span className="text-sm text-gray-900">Via WhatsApp</span>
                </div>
-               <div className="flex justify-between pt-2">
+               {calculateDiscountAmount(cart.items, discounts) > 0 && (
+                 <div className="flex justify-between">
+                   <span className="text-sm text-green-600">Diskon</span>
+                   <span className="text-sm font-medium text-green-600">- Rp {calculateDiscountAmount(cart.items, discounts).toLocaleString('id-ID')}</span>
+                 </div>
+               )}
+               <div className="flex justify-between pt-2 border-t border-gray-100">
                  <span className="text-sm font-bold text-gray-900">Total Pembayaran</span>
-                 <span className="text-base font-bold text-primary">Rp {cart.getSubtotal().toLocaleString('id-ID')}</span>
+                 <span className="text-base font-bold text-primary">Rp {(cart.getSubtotal() - calculateDiscountAmount(cart.items, discounts)).toLocaleString('id-ID')}</span>
                </div>
             </div>
 
@@ -384,9 +403,15 @@ export default function CheckoutPage() {
                  <span className="text-sm text-gray-600">Ongkos Kirim</span>
                  <span className="text-sm text-gray-900">Via WhatsApp</span>
                </div>
+               {calculateDiscountAmount(cart.items, discounts) > 0 && (
+                 <div className="flex justify-between pb-3 border-b border-gray-100">
+                   <span className="text-sm text-green-600">Diskon Promo</span>
+                   <span className="text-sm font-medium text-green-600">- Rp {calculateDiscountAmount(cart.items, discounts).toLocaleString('id-ID')}</span>
+                 </div>
+               )}
                <div className="flex justify-between pb-3">
                  <span className="text-sm font-bold text-gray-900">Total Pembayaran</span>
-                 <span className="text-base font-bold text-primary">Rp {cart.getSubtotal().toLocaleString('id-ID')}</span>
+                 <span className="text-base font-bold text-primary">Rp {(cart.getSubtotal() - calculateDiscountAmount(cart.items, discounts)).toLocaleString('id-ID')}</span>
                </div>
                <button
                   onClick={handleCheckout}
@@ -406,7 +431,7 @@ export default function CheckoutPage() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-2px_10px_rgba(0,0,0,0.05)] px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+8px)] flex items-center justify-end gap-3 h-[60px]">
         <div className="flex flex-col items-end flex-1">
           <span className="text-[13px] text-gray-900">Total Pembayaran</span>
-          <span className="text-base font-bold text-primary leading-tight">Rp {cart.getSubtotal().toLocaleString('id-ID')}</span>
+          <span className="text-base font-bold text-primary leading-tight">Rp {(cart.getSubtotal() - calculateDiscountAmount(cart.items, discounts)).toLocaleString('id-ID')}</span>
         </div>
         <button
           onClick={handleCheckout}

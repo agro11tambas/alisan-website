@@ -81,6 +81,9 @@ export const useCartStore = create<CartState>()(
               minOrder: product.minimumOrder || 1,
               orderStep: product.orderStep || 1,
               combinationId,
+              categories: group.categories,
+              erpProductId: product.erpProductId,
+              erpCategoryIds: product.erpCategoryIds,
             };
           
           return { items: [...state.items, newItem] };

@@ -19,6 +19,8 @@ export type Product = {
   optionName?: string;
   minimumOrder: number;
   orderStep: number;
+  erpProductId?: string;
+  erpCategoryIds?: string[];
 };
 
 export type AddOnProduct = {
@@ -30,6 +32,8 @@ export type AddOnProduct = {
   stock: number;
   image?: string;
   gallery?: string[];
+  erpProductId?: string;
+  erpCategoryIds?: string[];
 };
 
 export type ProductGroup = {
@@ -75,6 +79,9 @@ export type CartItem = {
   minOrder: number;
   orderStep: number;
   combinationId?: number;
+  categories?: string[];
+  erpProductId?: string;
+  erpCategoryIds?: string[];
 };
 
 export interface Address {

@@ -19,13 +19,15 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           id: String(opt.id),
           name: opt.alias || erpProd.name || ecProduct.title,
           sku: erpProd.sku || "",
-          price: Number(opt.price || erpProd.price || 0),
-          salePrice: Number(erpProd.sale_price) > 0 ? Number(erpProd.sale_price) : undefined,
+          price: Number(opt.original_price || opt.price || erpProd.price || 0),
+          salePrice: (opt.original_price && Number(opt.price) < Number(opt.original_price)) ? Number(opt.price) : (Number(erpProd.sale_price) > 0 ? Number(erpProd.sale_price) : undefined),
           stock: Number(ecProduct.max_qty || 1000),
           optionName: opt.alias || erpProd.name,
           minimumOrder: Number(ecProduct.min_qty || 1),
           orderStep: Number(ecProduct.multiple_qty || 1),
           image: opt.image || imageUrl,
+          erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
+          erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
         };
       });
     } else {
@@ -48,15 +50,21 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           id: String(opt.id),
           name: opt.alias || erpProd.name,
           sku: erpProd.sku || "",
-          price: Number(opt.price || erpProd.price || 0),
-          salePrice: Number(erpProd.sale_price) > 0 ? Number(erpProd.sale_price) : undefined,
+          price: Number(opt.original_price || opt.price || erpProd.price || 0),
+          salePrice: (opt.original_price && Number(opt.price) < Number(opt.original_price)) ? Number(opt.price) : (Number(erpProd.sale_price) > 0 ? Number(erpProd.sale_price) : undefined),
           stock: Number(ecProduct.max_qty || 1000),
           image: opt.image || imageUrl,
+          erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
+          erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
         };
       });
     }
 
-    const combinations = ecProduct.variant_combinations || [];
+    const combinations = ecProduct.variant_combinations?.map((comb: any) => ({
+      ...comb,
+      price: Number(comb.original_price || comb.price || 0),
+      salePrice: (comb.original_price && Number(comb.price) < Number(comb.original_price)) ? Number(comb.price) : undefined,
+    })) || [];
 
     return {
       id: String(ecProduct.id),
