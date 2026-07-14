@@ -76,6 +76,11 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (isMounted && !customerLoading) {
+      if (!isLoggedIn) {
+        router.push('/login?redirect=/checkout');
+        return;
+      }
+
       if (isLoggedIn && customer) {
         if (customer.customers && customer.customers.length > 0) {
           if (!selectedCustomerId) {

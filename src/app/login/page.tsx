@@ -56,8 +56,11 @@ export default function LoginPage() {
       // Simulate setting token
       localStorage.setItem("customer_token", "mock_otp_token");
       
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect') || '/';
+      
       alert(`Berhasil login dengan nomor ${phoneNumber}`);
-      router.push("/");
+      window.location.href = redirectUrl;
     } catch (error) {
       setServerError("OTP tidak valid. Silakan coba lagi.");
     } finally {

@@ -16,7 +16,7 @@ function AuthCallbackHandler() {
     }
 
     localStorage.setItem("customer_token", token);
-    router.replace("/");
+    window.location.replace("/");
   }, [router, searchParams]);
 
   return (

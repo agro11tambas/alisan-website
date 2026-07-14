@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Minus, Plus, ShoppingCart, AlertCircle, MessageSquare, Heart, ShieldCheck } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useCurrentCustomer } from "@/hooks/use-current-customer";
 
 interface ProductActionsProps {
   group: ProductGroup;
@@ -19,6 +20,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   const [selectedLid, setSelectedLid] = useState<AddOnProduct | null>(null);
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore(state => state.addItem);
+  const { isLoggedIn } = useCurrentCustomer();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -117,6 +119,15 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
   const handleAddToCart = () => {
     if (!selectedProduct) return;
+    
+    if (!isLoggedIn) {
+      toast.error("Silakan login", {
+        description: "Anda harus login terlebih dahulu untuk menambah produk ke keranjang."
+      });
+      router.push("/login");
+      return;
+    }
+
     addItem(group, selectedProduct, quantity, selectedLid || undefined);
     toast.success("Berhasil Ditambahkan", {
       description: `${quantity}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`
