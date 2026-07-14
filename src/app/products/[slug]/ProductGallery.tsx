@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
 
 interface ProductGalleryProps {
   images: string[];
@@ -11,42 +12,89 @@ interface ProductGalleryProps {
 }
 
 export default function ProductGallery({ images, activeImage: controlledImage, onActiveImageChange }: ProductGalleryProps) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [internalIndex, setInternalIndex] = useState(0);
   const [fadeKey, setFadeKey] = useState(0);
 
   const displayedImage = controlledImage || images[internalIndex];
 
-  // Trigger fade on controlled image change
+  // Sync embla with controlledImage
   useEffect(() => {
-    if (controlledImage) {
+    if (controlledImage && emblaApi) {
+      const idx = images.indexOf(controlledImage);
+      if (idx !== -1 && idx !== emblaApi.selectedScrollSnap()) {
+        emblaApi.scrollTo(idx);
+      }
       setFadeKey(k => k + 1);
     }
-  }, [controlledImage]);
+  }, [controlledImage, emblaApi, images]);
 
-  // Reset internal index when gallery changes
+  // Sync internal state with embla swipe
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    const idx = emblaApi.selectedScrollSnap();
+    setInternalIndex(idx);
+    if (onActiveImageChange && images[idx]) {
+      onActiveImageChange(images[idx]);
+    }
+  }, [emblaApi, onActiveImageChange, images]);
+
   useEffect(() => {
-    setInternalIndex(0);
-  }, [images]);
+    if (!emblaApi) return;
+    emblaApi.on("select", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi, onSelect]);
 
   const handleThumbnailClick = (idx: number) => {
+    if (emblaApi) emblaApi.scrollTo(idx);
     setInternalIndex(idx);
     if (onActiveImageChange) {
       onActiveImageChange(images[idx]);
     }
   };
 
+  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
+
   return (
     <div className="flex flex-col gap-0 md:gap-2">
       {/* Main Image */}
-      <div className="relative aspect-square w-full md:rounded-lg overflow-hidden bg-white border-b border-gray-100 md:border md:bg-gray-50 md:border-gray-200">
-        <Image 
-          key={`img-${fadeKey}-${displayedImage}`}
-          src={displayedImage}
-          alt="Product Image"
-          fill
-          className="object-contain animate-in fade-in duration-300"
-          priority
-        />
+      <div className="relative aspect-square w-full md:rounded-lg overflow-hidden bg-white border-b border-gray-100 md:border md:bg-gray-50 md:border-gray-200 group">
+        <div className="overflow-hidden w-full h-full" ref={emblaRef}>
+          <div className="flex w-full h-full">
+            {images.map((img, idx) => (
+              <div key={idx} className="relative flex-[0_0_100%] min-w-0 h-full">
+                <Image 
+                  src={img}
+                  alt={`Product Image ${idx + 1}`}
+                  fill
+                  className="object-contain"
+                  priority={idx === 0}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Navigation Arrows */}
+        {images.length > 1 && (
+          <>
+            <button 
+              onClick={scrollPrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button 
+              onClick={scrollNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </>
+        )}
       </div>
       
       {/* Thumbnails */}

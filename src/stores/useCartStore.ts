@@ -7,7 +7,10 @@ interface CartState {
   addItem: (group: ProductGroup, product: Product, quantity: number, addOn?: AddOnProduct) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
+  toggleSelection: (cartItemId: string) => void;
+  toggleAllSelection: (selected: boolean) => void;
   clearCart: () => void;
+  clearSelectedItems: () => void;
   getSubtotal: () => number;
   getTotalCount: () => number;
 }
@@ -84,6 +87,7 @@ export const useCartStore = create<CartState>()(
               categories: group.categories,
               erpProductId: product.erpProductId,
               erpCategoryIds: product.erpCategoryIds,
+              isSelected: true,
             };
           
           return { items: [...state.items, newItem] };
@@ -104,14 +108,35 @@ export const useCartStore = create<CartState>()(
         }));
       },
       
+      toggleSelection: (cartItemId) => {
+        set((state) => ({
+          items: state.items.map((item) =>
+            item.id === cartItemId ? { ...item, isSelected: item.isSelected === false ? true : false } : item
+          ),
+        }));
+      },
+      
+      toggleAllSelection: (selected) => {
+        set((state) => ({
+          items: state.items.map((item) => ({ ...item, isSelected: selected })),
+        }));
+      },
+      
       clearCart: () => set({ items: [] }),
+      clearSelectedItems: () => set((state) => ({
+        items: state.items.filter((item) => item.isSelected === false)
+      })),
       
       getSubtotal: () => {
-        return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+        return get().items
+          .filter(item => item.isSelected !== false)
+          .reduce((total, item) => total + item.price * item.quantity, 0);
       },
       
       getTotalCount: () => {
-        return get().items.reduce((total, item) => total + item.quantity, 0);
+        return get().items
+          .filter(item => item.isSelected !== false)
+          .reduce((total, item) => total + item.quantity, 0);
       },
     }),
     {

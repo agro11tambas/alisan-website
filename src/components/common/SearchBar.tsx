@@ -17,19 +17,19 @@ export default function SearchBar() {
 
   return (
     <form onSubmit={handleSearch} className="flex flex-1 max-w-2xl items-center relative">
-      <input
-        type="text"
-        placeholder="Search for products, brands and more"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="w-full h-10 pl-4 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm transition-shadow"
-      />
       <button 
         type="submit" 
-        className="absolute right-0 top-0 h-10 w-10 flex items-center justify-center bg-primary text-primary-foreground rounded-r-md hover:bg-primary/90 transition-colors"
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
       >
-        <Search size={18} />
+        <Search size={16} />
       </button>
+      <input
+        type="text"
+        placeholder="cari produk"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="w-full h-10 pl-9 pr-4 text-sm bg-gray-100 border-none outline-none focus:ring-1 focus:ring-primary/20 rounded-full transition-shadow"
+      />
     </form>
   );
 }

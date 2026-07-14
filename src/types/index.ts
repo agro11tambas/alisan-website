@@ -82,22 +82,40 @@ export type CartItem = {
   categories?: string[];
   erpProductId?: string;
   erpCategoryIds?: string[];
+  isSelected?: boolean;
 };
 
 export interface Address {
-  id: string;
+  id: string | number;
+  customer_id?: number;
+  business_name?: string;
   businessName?: string;
-  completeAddress: string;
+  address?: string;
+  completeAddress?: string;
+  google_maps?: string;
   googleMapsLink?: string;
-  isDefault: boolean;
+  is_default?: boolean;
+  isDefault?: boolean;
+}
+
+export interface BusinessProfile {
+  id: number;
+  name: string;
+  phone: string;
+  email?: string;
+  addresses?: Address[];
 }
 
 export interface Customer {
-  id?: string;
-  fullName: string;
+  id?: string | number;
+  name?: string;
+  fullName?: string;
   email: string;
-  whatsappNumber: string;
-  address: string;
+  whatsapp_number?: string;
+  whatsappNumber?: string;
+  address?: string;
+  customer_id?: number;
+  customers?: BusinessProfile[];
 }
 
 export interface Order {

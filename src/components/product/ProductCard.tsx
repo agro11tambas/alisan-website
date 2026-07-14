@@ -34,7 +34,7 @@ export default function ProductCard({ group }: { group: ProductGroup }) {
         
         <div className="mt-auto flex flex-col gap-0.5 md:gap-1">
           <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
-            <span className="text-[10px] md:text-xs text-gray-500 font-medium">From</span>
+            <span className="text-[10px] md:text-xs text-gray-500 font-medium">Mulai dari</span>
             <div className="flex flex-col">
               {hasDiscount && (
                 <span className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
@@ -48,7 +48,7 @@ export default function ProductCard({ group }: { group: ProductGroup }) {
           </div>
           
           <div className="text-[10px] md:text-xs text-gray-500 font-medium">
-            {group.products.length} options
+            {group.products.length} opsi
           </div>
 
 

@@ -118,8 +118,8 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   const handleAddToCart = () => {
     if (!selectedProduct) return;
     addItem(group, selectedProduct, quantity, selectedLid || undefined);
-    toast.success("Added to Cart", {
-      description: `${quantity}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} added.`
+    toast.success("Berhasil Ditambahkan", {
+      description: `${quantity}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`
     });
   };
 
@@ -147,7 +147,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
           ? (comboPricing.salePrice || comboPricing.price)
           : ((selectedProduct.salePrice || selectedProduct.price) + (selectedLid ? (selectedLid.salePrice || selectedLid.price) : 0))
       )
-    : Math.min(...group.products.map(p => p.salePrice || p.price));
+    : Math.min(...group.products.map(p => p.salePrice ?? p.price));
 
   const displayOriginalPrice = selectedProduct
     ? (
@@ -165,7 +165,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       {/* Price Display */}
       <div className="mb-3 px-3 md:px-0">
         <div className="flex items-end gap-1 md:gap-2">
-          {!selectedProduct && <span className="text-xs text-gray-500 mb-0.5">From</span>}
+          {!selectedProduct && <span className="text-xs text-gray-500 mb-0.5">Mulai dari</span>}
           {displayOriginalPrice && (
             <span className="text-sm font-medium text-gray-400 line-through mb-1">
               Rp {displayOriginalPrice.toLocaleString('id-ID')}
@@ -180,7 +180,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       {/* Main Options */}
       <div className="border-t-[6px] border-gray-100 md:border-t md:border-gray-100 pt-3 md:pt-3 pb-2 px-3 md:px-0">
         <div className="flex justify-between items-center mb-2.5">
-          <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">{group.productGroupName || "Product Option"}</h3>
+          <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">{group.productGroupName || "Opsi Produk"}</h3>
           <span className="text-[10px] text-gray-500 md:hidden">Pilih &gt;</span>
         </div>
         <div className="flex flex-wrap gap-2 md:gap-2 pb-1">
@@ -211,7 +211,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       {lids.length > 0 && selectedProduct && (
         <div className="border-t-[6px] border-gray-100 md:border-t md:border-gray-100 pt-3 md:pt-3 pb-2 px-3 md:px-0">
           <div className="flex justify-between items-center mb-2.5">
-            <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">{group.lidGroupName || "Lid Option"}</h3>
+            <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">{group.lidGroupName || "Opsi Tutup"}</h3>
           </div>
           <div className="flex flex-wrap gap-2 md:gap-2 pb-1">
             <button
@@ -222,7 +222,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                   : 'border-gray-300 text-gray-700 hover:border-primary/50'
               }`}
             >
-              Tanpa {group.lidGroupName || "Lid"}
+              Tanpa {group.lidGroupName || "Tutup"}
             </button>
             {lids.map((lid) => {
               const isSelected = selectedLid?.id === lid.id;
@@ -255,10 +255,10 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
         <div className="border-t-[6px] border-gray-100 md:border-none mb-1.5 md:mb-3 bg-gray-50 md:bg-gray-50 p-2 md:px-3 md:py-2 mx-3 md:mx-0 rounded border border-gray-200 md:border-gray-100 text-xs mt-3 md:mt-0">
           <div className="flex items-center justify-between">
             <div className="truncate pr-2">
-              <span className="text-gray-500">Selected: </span>
+              <span className="text-gray-500">Terpilih: </span>
               <span className="font-medium text-gray-900">{selectedProduct.name}</span>
               {lids.length > 0 && (
-                <span className="text-gray-500"> · {group.lidGroupName || "Lid"}: <span className="font-medium text-gray-900">{selectedLid ? selectedLid.name : `Tanpa ${group.lidGroupName || "Lid"}`}</span></span>
+                <span className="text-gray-500"> · {group.lidGroupName || "Tutup"}: <span className="font-medium text-gray-900">{selectedLid ? selectedLid.name : `Tanpa ${group.lidGroupName || "Tutup"}`}</span></span>
               )}
             </div>
             <span className="font-bold text-primary whitespace-nowrap">Rp {displayPrice.toLocaleString('id-ID')}</span>
@@ -269,7 +269,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       {/* Desktop Quantity Block */}
       <div className="hidden md:block pt-3 pb-3 px-3 md:px-0 md:pt-0 md:pb-0 mb-3">
         <div className="flex items-center justify-between md:justify-start">
-          <span className="text-sm font-bold text-gray-800 md:font-medium md:text-xs md:text-gray-700 md:w-20">Quantity</span>
+          <span className="text-sm font-bold text-gray-800 md:font-medium md:text-xs md:text-gray-700 md:w-20">Jumlah</span>
           <div className="flex items-center gap-3">
             <div className="flex items-center border border-gray-300 rounded-md">
               <button 
@@ -291,7 +291,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
               </button>
             </div>
             <span className="text-xs text-gray-500 md:ml-3">
-              Maximum Qty: <span className="font-medium text-gray-700">{selectedProduct ? maxStock : group.products.reduce((acc, p) => acc + p.stock, 0)}</span>
+              Maksimal Qty: <span className="font-medium text-gray-700">{selectedProduct ? maxStock : group.products.reduce((acc, p) => acc + p.stock, 0)}</span>
             </span>
           </div>
         </div>
@@ -301,7 +301,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
         {!selectedProduct && (
           <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-md mb-3 text-xs font-medium border border-amber-200">
             <AlertCircle size={14} />
-            Please select an option first.
+            Silakan pilih varian terlebih dahulu.
           </div>
         )}
 
@@ -312,7 +312,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             className="w-full h-10 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm rounded-md hover:bg-primary/90 transition-colors shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           >
             <ShoppingCart size={18} />
-            Add to Cart
+            Masukkan Keranjang
           </button>
         </div>
       </div>

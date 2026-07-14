@@ -9,8 +9,8 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
     const productOptionGroup = ecProduct.variant_groups?.[0];
     const lidOptionGroup = ecProduct.variant_groups?.[1];
 
-    // Prefer alisan_code for image if it exists, fallback to image or placeholder
-    const imageUrl = ecProduct.alisan_code || ecProduct.image || "/image/Placeholder.jpg";
+    // Use main_image from backend, fallback to placeholder
+    const imageUrl = ecProduct.main_image || "/image/Placeholder.jpg";
 
     if (productOptionGroup && productOptionGroup.options) {
       products = productOptionGroup.options.map((opt: any) => {
@@ -63,7 +63,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
     const combinations = ecProduct.variant_combinations?.map((comb: any) => ({
       ...comb,
       price: Number(comb.original_price || comb.price || 0),
-      salePrice: (comb.original_price && Number(comb.price) < Number(comb.original_price)) ? Number(comb.price) : undefined,
+      salePrice: comb.sale_price ? Number(comb.sale_price) : ((comb.original_price && Number(comb.price) < Number(comb.original_price)) ? Number(comb.price) : undefined),
     })) || [];
 
     return {
@@ -76,9 +76,11 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
       rating: 5.0,
       totalSold: 0,
       image: imageUrl,
-      gallery: ecProduct.alisan_code ? [ecProduct.alisan_code] : (ecProduct.image ? [ecProduct.image] : ["/image/Placeholder.jpg"]),
-      productGroupName: productOptionGroup?.name || "Product Option",
-      lidGroupName: lidOptionGroup?.name || "Lid Option",
+      gallery: ecProduct.gallery_images?.length > 0 
+        ? ecProduct.gallery_images.map((g: any) => g.image_url) 
+        : (ecProduct.main_image ? [ecProduct.main_image] : ["/image/Placeholder.jpg"]),
+      productGroupName: productOptionGroup?.name || "Opsi Produk",
+      lidGroupName: lidOptionGroup?.name || "Opsi Tutup",
       products,
       _lids: addOns,
       _combinations: combinations,

@@ -26,9 +26,9 @@ export default async function ProductDetailPage({
       <div className="hidden md:block bg-white border-b border-border shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center text-[10px] md:text-sm text-gray-500 gap-1.5 md:gap-2">
-            <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+            <Link href="/" className="hover:text-primary transition-colors">Beranda</Link>
             <span>/</span>
-            <Link href="/products" className="hover:text-primary transition-colors">Products</Link>
+            <Link href="/products" className="hover:text-primary transition-colors">Produk</Link>
             <span>/</span>
             <span className="text-gray-900 font-medium truncate">{group.name}</span>
           </div>
@@ -43,7 +43,7 @@ export default async function ProductDetailPage({
         {/* Related Products */}
         {relatedGroups.length > 0 && (
           <div className="mt-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 tracking-tight">You might also like</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4 tracking-tight">Mungkin Anda Suka</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
               {relatedGroups.map(rg => (
                 <ProductCard key={rg.id} group={rg} />

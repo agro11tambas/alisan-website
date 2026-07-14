@@ -12,8 +12,11 @@ export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const cart = useCartStore();
+  const selectedItems = cart.items.filter(i => i.isSelected !== false);
+  const itemDiscounts = calculateItemDiscounts(selectedItems, discounts);
+  const discountAmount = calculateDiscountAmount(selectedItems, discounts);
   
-  const itemDiscounts = calculateItemDiscounts(cart.items, discounts);
+  const isAllSelected = cart.items.length > 0 && cart.items.every(i => i.isSelected !== false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -29,12 +32,12 @@ export default function CartPage() {
           <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-3">
             <ShoppingBag size={32} />
           </div>
-          <h2 className="text-lg font-bold text-gray-900 mb-1">Your cart is empty</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Keranjang Anda kosong</h2>
           <p className="text-gray-500 text-sm mb-4 max-w-md">
-            Discover our latest products and promotions.
+            Temukan produk dan promosi terbaru kami.
           </p>
           <Link href="/products" className="h-10 px-6 flex items-center justify-center bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors">
-            Continue Shopping
+            Lanjut Belanja
           </Link>
         </div>
       ) : (
@@ -47,10 +50,16 @@ export default function CartPage() {
                 
                 {/* Shop Group Header */}
                 <div className="h-10 px-3 border-b border-gray-100 flex items-center justify-between bg-white mt-2 sm:mt-0">
-                  <div className="text-sm font-medium text-gray-900">
-                    Keranjang Saya
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      checked={isAllSelected}
+                      onChange={(e) => cart.toggleAllSelection(e.target.checked)}
+                      className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
+                    />
+                    <span className="text-sm font-medium text-gray-900">Pilih Semua</span>
                   </div>
-                  <button className="text-sm text-gray-500">Edit</button>
+                  <button className="text-sm text-gray-500">Ubah</button>
                 </div>
 
                 <div className="bg-white">
@@ -62,7 +71,17 @@ export default function CartPage() {
                     const itemDiscountedTotal = itemTotal - itemDiscount;
 
                     return (
-                      <div key={item.id} className="py-3 px-3 border-b border-gray-100 last:border-0 relative flex gap-2">
+                      <div key={item.id} className="py-3 px-3 border-b border-gray-100 last:border-0 relative flex gap-2 sm:gap-3 items-center sm:items-start">
+                      
+                      {/* Checkbox */}
+                      <div className="shrink-0 pl-1">
+                        <input 
+                          type="checkbox" 
+                          checked={item.isSelected !== false}
+                          onChange={() => cart.toggleSelection(item.id)}
+                          className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
+                        />
+                      </div>
                       
                       {/* Image */}
                       <div className="relative w-20 h-20 rounded-sm overflow-hidden bg-gray-50 shrink-0 border border-gray-100">
@@ -151,7 +170,7 @@ export default function CartPage() {
                         <button
                           onClick={() => cart.removeItem(item.id)}
                           className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
-                          title="Remove item"
+                          title="Hapus item"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -172,21 +191,22 @@ export default function CartPage() {
                   <span className="text-sm text-gray-600">Total Harga</span>
                   <span className="text-sm font-medium text-gray-900">Rp {cart.getSubtotal().toLocaleString('id-ID')}</span>
                 </div>
-                {calculateDiscountAmount(cart.items, discounts) > 0 && (
+                {discountAmount > 0 && (
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-green-600">Diskon</span>
-                    <span className="text-sm font-medium text-green-600">- Rp {calculateDiscountAmount(cart.items, discounts).toLocaleString('id-ID')}</span>
+                    <span className="text-sm font-medium text-green-600">- Rp {discountAmount.toLocaleString('id-ID')}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center mb-4 mt-2 pt-2 border-t border-gray-100">
                   <span className="text-sm font-bold text-gray-900">Total Tagihan</span>
-                  <span className="text-lg font-bold text-primary">Rp {(cart.getSubtotal() - calculateDiscountAmount(cart.items, discounts)).toLocaleString('id-ID')}</span>
+                  <span className="text-lg font-bold text-primary">Rp {(cart.getSubtotal() - discountAmount).toLocaleString('id-ID')}</span>
                 </div>
                 <Link
-                href="/checkout"
-                className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3.5 px-4 rounded-xl font-bold hover:bg-primary/90 transition-all active:scale-[0.98] shadow-sm hover:shadow"
+                href={selectedItems.length > 0 ? "/checkout" : "#"}
+                className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-bold transition-all ${selectedItems.length > 0 ? 'bg-primary text-white hover:bg-primary/90 active:scale-[0.98] shadow-sm hover:shadow' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                onClick={(e) => { if (selectedItems.length === 0) e.preventDefault(); }}
               >
-                Checkout ({cart.items.length})
+                Checkout ({selectedItems.length})
               </Link>
               </div>
             </div>
@@ -203,9 +223,9 @@ export default function CartPage() {
               <span className="text-xs font-medium text-gray-500">Total Tagihan</span>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-base font-bold text-primary">
-                  Rp {(cart.getSubtotal() - calculateDiscountAmount(cart.items, discounts)).toLocaleString('id-ID')}
+                  Rp {(cart.getSubtotal() - discountAmount).toLocaleString('id-ID')}
                 </span>
-                {calculateDiscountAmount(cart.items, discounts) > 0 && (
+                {discountAmount > 0 && (
                   <span className="text-xs line-through text-gray-400">
                     Rp {cart.getSubtotal().toLocaleString('id-ID')}
                   </span>
@@ -213,10 +233,11 @@ export default function CartPage() {
               </div>
             </div>
             <Link 
-              href="/checkout"
-              className="h-10 px-5 flex items-center justify-center bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors w-auto"
+              href={selectedItems.length > 0 ? "/checkout" : "#"}
+              onClick={(e) => { if (selectedItems.length === 0) e.preventDefault(); }}
+              className={`h-10 px-5 flex items-center justify-center text-sm font-medium rounded-md transition-colors w-auto ${selectedItems.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             >
-              Checkout ({cart.items.length})
+              Checkout ({selectedItems.length})
             </Link>
           </div>
         </div>

@@ -16,16 +16,16 @@ export default function NotFound() {
           />
         </div>
         
-        <h1 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">Page Not Found</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">Halaman Tidak Ditemukan</h1>
         <p className="text-gray-500 mb-8 leading-relaxed">
-          Oops! We couldn't find the page you're looking for. It might have been moved, deleted, or you might have mistyped the address.
+          Oops! Kami tidak dapat menemukan halaman yang Anda cari. Halaman mungkin telah dipindahkan, dihapus, atau Anda mungkin salah mengetik alamat.
         </p>
         
         <Link 
           href="/"
           className="inline-flex h-12 items-center justify-center px-8 bg-primary text-white font-bold rounded-md hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
         >
-          Return Home
+          Kembali ke Beranda
         </Link>
       </div>
     </div>
