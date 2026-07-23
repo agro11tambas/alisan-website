@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, User, Menu, Search, X, ArrowLeft, Settings, LogOut } from "lucide-react";
+import { ShoppingCart, User, Menu, Settings, LogOut } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
 import SearchBar from "./SearchBar";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import MobileNav from "./MobileNav";
 import { api } from "@/services/api";
+import { notifyCustomerAuthChanged } from "@/lib/customer-auth-events";
 
 export default function Header() {
   const [isMounted, setIsMounted] = useState(false);
@@ -29,7 +30,9 @@ export default function Header() {
   const { customer, isLoggedIn } = useCurrentCustomer();
 
   useEffect(() => {
-    setIsMounted(true);
+    const mountedTimer = window.setTimeout(() => setIsMounted(true), 0);
+
+    return () => window.clearTimeout(mountedTimer);
   }, []);
 
   const handleLogout = async () => {
@@ -39,10 +42,9 @@ export default function Header() {
       console.error("Logout error:", error);
     } finally {
       localStorage.removeItem("customer_token");
+      notifyCustomerAuthChanged();
       router.push("/login");
       router.refresh();
-      // force reload to clear states
-      window.location.reload();
     }
   };
 

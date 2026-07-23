@@ -1,5 +1,5 @@
 export type LoginPayload = {
-  identifier: string;
+  whatsapp_number: string;
   password: string;
 };
 

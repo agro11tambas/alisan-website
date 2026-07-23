@@ -4,16 +4,21 @@ export const loginPhoneSchema = z.object({
   phoneNumber: z.string()
     .min(9, 'WhatsApp number must be at least 9 digits')
     .max(14, 'WhatsApp number must be at most 14 digits')
-    .regex(/^(08|628)\d+$/, 'Must be a valid Indonesian WhatsApp number starting with 08 or 628'),
+    .regex(/^08\d+$/, 'Nomor HP harus menggunakan format 08'),
+  password: z.string().min(1, 'Password wajib diisi'),
 });
 
 export type LoginPhoneFormValues = z.infer<typeof loginPhoneSchema>;
 
-export const loginOtpSchema = z.object({
-  otp: z.string().length(6, 'OTP must be exactly 6 digits').regex(/^\d+$/, 'OTP must contain only numbers'),
+export const resetPasswordSchema = z.object({
+  password: z.string().min(8, 'Password minimal 8 karakter'),
+  confirmPassword: z.string().min(8, 'Konfirmasi password minimal 8 karakter'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Konfirmasi password tidak sama',
+  path: ['confirmPassword'],
 });
 
-export type LoginOtpFormValues = z.infer<typeof loginOtpSchema>;
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export const registerSchema = z.object({
   fullName: z.string().min(1, 'Full name is required'),

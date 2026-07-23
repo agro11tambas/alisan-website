@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { LoginPayload, LoginResponse } from "@/types/auth-type";
 import api from "@/services/api";
+import { notifyCustomerAuthChanged } from "@/lib/customer-auth-events";
 
 export function useCustomerLogin() {
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,7 @@ export function useCustomerLogin() {
       const token = res.data.data.token;
 
       localStorage.setItem("customer_token", token);
+      notifyCustomerAuthChanged();
 
       return res.data;
     } finally {

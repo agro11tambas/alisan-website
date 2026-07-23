@@ -5,15 +5,31 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Settings as SettingsIcon, Save, LogOut, Briefcase, MapPin, Plus, X, Edit2, Trash2 } from "lucide-react";
+import axios from "axios";
+import { User, Settings as SettingsIcon, Save, LogOut, Briefcase, MapPin, Plus, X, Edit2, Trash2, KeyRound, ShieldCheck } from "lucide-react";
 import { api } from "@/services/api";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
+import { notifyCustomerAuthChanged } from "@/lib/customer-auth-events";
+import type { Address } from "@/types";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter"),
   whatsapp_number: z.string().min(8, "Nomor WhatsApp tidak valid"),
 });
 type ProfileFormValues = z.infer<typeof profileSchema>;
+
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1, "Password saat ini wajib diisi"),
+  password: z.string().min(8, "Password baru minimal 8 karakter"),
+  confirmPassword: z.string().min(8, "Konfirmasi password minimal 8 karakter"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Konfirmasi password tidak sama",
+  path: ["confirmPassword"],
+}).refine((data) => data.currentPassword !== data.password, {
+  message: "Password baru harus berbeda dari password saat ini",
+  path: ["password"],
+});
+type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 const businessSchema = z.object({
   name: z.string().min(3, "Nama bisnis wajib diisi"),
@@ -30,10 +46,12 @@ const addressSchema = z.object({
 type AddressFormValues = z.infer<typeof addressSchema>;
 
 export default function SettingsPage() {
-  const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'business'>('profile');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [activeTab, setActiveTab] = useState<'profile' | 'business' | 'password'>('profile');
   
   // Business & address form states
   const [showBusinessForm, setShowBusinessForm] = useState(false);
@@ -43,7 +61,7 @@ export default function SettingsPage() {
   const [deletingAddressId, setDeletingAddressId] = useState<number | null>(null);
 
   const router = useRouter();
-  const { customer, isLoggedIn, refreshCustomer } = useCurrentCustomer();
+  const { customer, refreshCustomer } = useCurrentCustomer();
 
   const {
     register,
@@ -52,6 +70,16 @@ export default function SettingsPage() {
     formState: { errors },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
+  });
+
+  const {
+    register: registerPassword,
+    handleSubmit: handleSubmitPassword,
+    reset: resetPassword,
+    setError: setPasswordFieldError,
+    formState: { errors: passwordErrors },
+  } = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
   });
 
   const {
@@ -74,33 +102,32 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    setIsMounted(true);
-    fetchProfile();
-  }, []);
+    let isActive = true;
 
-  useEffect(() => {
-    // Auto-expand first business
-    if (customer?.customers && customer.customers.length > 0 && expandedBusinessId === null) {
-      setExpandedBusinessId(customer.customers[0].id);
-    }
-  }, [customer]);
-
-  const fetchProfile = async () => {
-    try {
-      const response = await api.get("/ecommerce/auth/me");
-      if (response.data.success && response.data.data) {
-        reset({
-          name: response.data.data.name || "",
-          whatsapp_number: response.data.data.whatsapp_number || "",
-        });
+    const profileRequest = window.setTimeout(async () => {
+      try {
+        const response = await api.get("/ecommerce/auth/me");
+        if (isActive && response.data.success && response.data.data) {
+          reset({
+            name: response.data.data.name || "",
+            whatsapp_number: response.data.data.whatsapp_number || "",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        router.push("/login");
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      router.push("/login");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    }, 0);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(profileRequest);
+    };
+  }, [reset, router]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     setIsSaving(true);
@@ -112,15 +139,16 @@ export default function SettingsPage() {
 
       if (response.data.success) {
         alert("Profil berhasil diperbarui!");
-        refreshCustomer();
+        await refreshCustomer();
+        notifyCustomerAuthChanged();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to update profile:", error);
       let errorMessage = "Terjadi kesalahan saat menyimpan profil.";
-      if (error.response?.data?.message) {
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
         errorMessage = error.response.data.message;
         if (error.response.data.errors) {
-          const details = Object.values(error.response.data.errors).flat().join("\\n");
+          const details = Object.values<string[]>(error.response.data.errors).flat().join("\\n");
           errorMessage += "\\n" + details;
         }
       }
@@ -130,13 +158,58 @@ export default function SettingsPage() {
     }
   };
 
+  const handleChangePassword = async (data: PasswordFormValues) => {
+    setIsChangingPassword(true);
+    setPasswordMessage("");
+    setPasswordError("");
+
+    try {
+      const response = await api.put("/ecommerce/auth/password", {
+        current_password: data.currentPassword,
+        password: data.password,
+        password_confirmation: data.confirmPassword,
+      });
+
+      resetPassword();
+      setPasswordMessage(response.data.message || "Password berhasil diubah.");
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && "response" in error) {
+        const response = (
+          error as {
+            response?: {
+              data?: {
+                message?: string;
+                errors?: Record<string, string[]>;
+              };
+            };
+          }
+        ).response;
+        const currentPasswordError = response?.data?.errors?.current_password?.[0];
+
+        if (currentPasswordError) {
+          setPasswordFieldError("currentPassword", {
+            message: currentPasswordError,
+          });
+        } else {
+          setPasswordError(
+            response?.data?.message || "Password gagal diubah. Silakan coba kembali.",
+          );
+        }
+      } else {
+        setPasswordError("Password gagal diubah. Silakan coba kembali.");
+      }
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   const handleSaveBusiness = async (data: BusinessFormValues) => {
     try {
       await api.post('/ecommerce/auth/businesses', data);
       await refreshCustomer();
       setShowBusinessForm(false);
       resetBusiness();
-    } catch (e) {
+    } catch {
       alert("Gagal menambahkan bisnis");
     }
   };
@@ -163,7 +236,7 @@ export default function SettingsPage() {
       setAddressFormForCustomerId(null);
       setEditingAddressId(null);
       resetAddress();
-    } catch (e) {
+    } catch {
       alert("Gagal menyimpan alamat");
     }
   };
@@ -174,16 +247,16 @@ export default function SettingsPage() {
     try {
       await api.delete(`/ecommerce/auth/addresses/${addressId}`);
       await refreshCustomer();
-    } catch (e) {
+    } catch {
       alert("Gagal menghapus alamat");
     } finally {
       setDeletingAddressId(null);
     }
   };
 
-  const openEditAddress = (addr: any, customerId: number) => {
+  const openEditAddress = (addr: Address, customerId: number) => {
     setAddressFormForCustomerId(customerId);
-    setEditingAddressId(addr.id);
+    setEditingAddressId(Number(addr.id));
     setAddressValue("businessName", addr.business_name || "");
     setAddressValue("address", addr.address || "");
     setAddressValue("googleMaps", addr.google_maps || "");
@@ -209,12 +282,13 @@ export default function SettingsPage() {
       console.error("Logout error:", error);
     } finally {
       localStorage.removeItem("customer_token");
+      notifyCustomerAuthChanged();
       router.push("/login");
       router.refresh();
     }
   };
 
-  if (!isMounted || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -249,6 +323,16 @@ export default function SettingsPage() {
             }`}
           >
             <Briefcase size={16} /> Bisnis & Alamat
+          </button>
+          <button
+            onClick={() => setActiveTab('password')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${
+              activeTab === 'password'
+                ? 'text-primary border-b-2 border-primary bg-primary/5'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <KeyRound size={16} /> Password
           </button>
         </div>
 
@@ -327,12 +411,118 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {/* ===== PASSWORD TAB ===== */}
+        {activeTab === 'password' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+              <ShieldCheck className="text-primary" size={24} />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Ubah Password</h1>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Sesi di perangkat lain akan dikeluarkan setelah password diubah.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <form onSubmit={handleSubmitPassword(handleChangePassword)} className="space-y-5">
+                <div>
+                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    Password Saat Ini
+                  </label>
+                  <input
+                    id="currentPassword"
+                    type="password"
+                    autoComplete="current-password"
+                    {...registerPassword("currentPassword")}
+                    className={`w-full h-11 px-4 text-sm border rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${
+                      passwordErrors.currentPassword ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Masukkan password saat ini"
+                  />
+                  {passwordErrors.currentPassword && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {passwordErrors.currentPassword.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    Password Baru
+                  </label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    {...registerPassword("password")}
+                    className={`w-full h-11 px-4 text-sm border rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${
+                      passwordErrors.password ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Minimal 8 karakter"
+                  />
+                  {passwordErrors.password && (
+                    <p className="mt-1 text-xs text-red-500">{passwordErrors.password.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    Konfirmasi Password Baru
+                  </label>
+                  <input
+                    id="confirmNewPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    {...registerPassword("confirmPassword")}
+                    className={`w-full h-11 px-4 text-sm border rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${
+                      passwordErrors.confirmPassword ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Ulangi password baru"
+                  />
+                  {passwordErrors.confirmPassword && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {passwordErrors.confirmPassword.message}
+                    </p>
+                  )}
+                </div>
+
+                {passwordMessage && (
+                  <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                    {passwordMessage}
+                  </div>
+                )}
+
+                {passwordError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {passwordError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isChangingPassword}
+                  className="w-full h-11 bg-primary text-white font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                >
+                  {isChangingPassword ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <KeyRound size={18} /> Ubah Password
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* ===== BUSINESS & ADDRESS TAB ===== */}
         {activeTab === 'business' && (
           <div className="space-y-4">
 
             {/* Business List */}
-            {businesses.map((biz: any) => (
+            {businesses.map((biz) => (
               <div key={biz.id} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                 {/* Business Header */}
                 <button
@@ -365,7 +555,7 @@ export default function SettingsPage() {
                       </div>
                     )}
 
-                    {biz.addresses?.map((addr: any) => (
+                    {biz.addresses?.map((addr) => (
                       <div key={addr.id} className="relative border border-gray-200 rounded-md p-3 flex items-start gap-3 group hover:border-primary/30 transition-colors">
                         <MapPin size={16} className="text-gray-400 mt-0.5 shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -391,8 +581,8 @@ export default function SettingsPage() {
                             <Edit2 size={14} />
                           </button>
                           <button
-                            onClick={() => handleDeleteAddress(addr.id)}
-                            disabled={deletingAddressId === addr.id}
+                            onClick={() => handleDeleteAddress(Number(addr.id))}
+                            disabled={deletingAddressId === Number(addr.id)}
                             className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
                             title="Hapus"
                           >
