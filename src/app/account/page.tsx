@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import axios from "axios";
-import { User, Settings as SettingsIcon, Save, LogOut, Briefcase, MapPin, Plus, X, Edit2, Trash2, KeyRound, ShieldCheck } from "lucide-react";
+import { User, Settings as SettingsIcon, Save, LogOut, Briefcase, MapPin, X, Edit2, Trash2, KeyRound, ShieldCheck } from "lucide-react";
 import { api } from "@/services/api";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
 import { notifyCustomerAuthChanged } from "@/lib/customer-auth-events";
@@ -31,12 +31,6 @@ const passwordSchema = z.object({
 });
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
-const businessSchema = z.object({
-  name: z.string().min(3, "Nama bisnis wajib diisi"),
-  phone: z.string().optional(),
-});
-type BusinessFormValues = z.infer<typeof businessSchema>;
-
 const addressSchema = z.object({
   businessName: z.string().optional(),
   address: z.string().min(10, "Harap berikan alamat lengkap"),
@@ -53,8 +47,7 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState("");
   const [activeTab, setActiveTab] = useState<'profile' | 'business' | 'password'>('profile');
   
-  // Business & address form states
-  const [showBusinessForm, setShowBusinessForm] = useState(false);
+  // Business & address states
   const [addressFormForCustomerId, setAddressFormForCustomerId] = useState<number | null>(null);
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const [expandedBusinessId, setExpandedBusinessId] = useState<number | null>(null);
@@ -80,15 +73,6 @@ export default function SettingsPage() {
     formState: { errors: passwordErrors },
   } = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
-  });
-
-  const {
-    register: registerBusiness,
-    handleSubmit: handleSubmitBusiness,
-    reset: resetBusiness,
-    formState: { errors: businessErrors },
-  } = useForm<BusinessFormValues>({
-    resolver: zodResolver(businessSchema),
   });
 
   const {
@@ -203,35 +187,15 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSaveBusiness = async (data: BusinessFormValues) => {
-    try {
-      await api.post('/ecommerce/auth/businesses', data);
-      await refreshCustomer();
-      setShowBusinessForm(false);
-      resetBusiness();
-    } catch {
-      alert("Gagal menambahkan bisnis");
-    }
-  };
-
   const handleSaveAddress = async (data: AddressFormValues) => {
-    if (!addressFormForCustomerId) return;
+    if (!addressFormForCustomerId || !editingAddressId) return;
     try {
-      if (editingAddressId) {
-        await api.put(`/ecommerce/auth/addresses/${editingAddressId}`, {
-          business_name: data.businessName,
-          address: data.address,
-          google_maps: data.googleMaps,
-          is_default: data.isDefault,
-        });
-      } else {
-        await api.post(`/ecommerce/auth/businesses/${addressFormForCustomerId}/addresses`, {
-          business_name: data.businessName,
-          address: data.address,
-          google_maps: data.googleMaps,
-          is_default: data.isDefault,
-        });
-      }
+      await api.put(`/ecommerce/auth/addresses/${editingAddressId}`, {
+        business_name: data.businessName,
+        address: data.address,
+        google_maps: data.googleMaps,
+        is_default: data.isDefault,
+      });
       await refreshCustomer();
       setAddressFormForCustomerId(null);
       setEditingAddressId(null);
@@ -261,12 +225,6 @@ export default function SettingsPage() {
     setAddressValue("address", addr.address || "");
     setAddressValue("googleMaps", addr.google_maps || "");
     setAddressValue("isDefault", addr.is_default || false);
-  };
-
-  const openAddAddress = (customerId: number) => {
-    setAddressFormForCustomerId(customerId);
-    setEditingAddressId(null);
-    resetAddress();
   };
 
   const cancelAddressForm = () => {
@@ -592,13 +550,11 @@ export default function SettingsPage() {
                       </div>
                     ))}
 
-                    {/* Address Form (Add / Edit) */}
-                    {addressFormForCustomerId === biz.id ? (
+                    {/* Address Edit Form */}
+                    {addressFormForCustomerId === biz.id && editingAddressId && (
                       <div className="border border-primary/20 bg-primary/5 rounded-md p-3 mt-2">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-bold text-gray-900">
-                            {editingAddressId ? 'Edit Alamat' : 'Tambah Alamat Baru'}
-                          </h4>
+                          <h4 className="text-sm font-bold text-gray-900">Edit Alamat</h4>
                           <button onClick={cancelAddressForm} className="text-gray-400 hover:text-gray-600">
                             <X size={18} />
                           </button>
@@ -632,74 +588,22 @@ export default function SettingsPage() {
                             <label htmlFor={`isDefault-${biz.id}`} className="text-sm font-medium text-gray-700 cursor-pointer">Jadikan utama</label>
                           </div>
                           <button type="submit" className="w-full h-10 bg-primary text-white text-sm rounded-md font-medium hover:bg-primary/90">
-                            {editingAddressId ? 'Simpan Perubahan' : 'Simpan Alamat'}
+                            Simpan Perubahan
                           </button>
                         </form>
                       </div>
-                    ) : (
-                      <button
-                        onClick={() => openAddAddress(biz.id)}
-                        className="w-full border border-dashed border-gray-300 rounded-md p-3 flex items-center justify-center gap-2 text-gray-500 hover:text-primary hover:border-primary hover:bg-primary/5 transition-colors text-sm font-medium"
-                      >
-                        <Plus size={16} /> Tambah Alamat
-                      </button>
                     )}
                   </div>
                 )}
               </div>
             ))}
 
-            {/* Add Business Form */}
-            {showBusinessForm ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-900">Tambah Bisnis Baru</h3>
-                  <button onClick={() => { setShowBusinessForm(false); resetBusiness(); }} className="text-gray-400 hover:text-gray-600">
-                    <X size={18} />
-                  </button>
-                </div>
-                <form onSubmit={handleSubmitBusiness(handleSaveBusiness)} className="space-y-3">
-                  <div>
-                    <input
-                      {...registerBusiness("name")}
-                      className={`w-full h-11 px-3 text-sm border rounded-md focus:ring-1 focus:ring-primary/50 outline-none ${businessErrors.name ? 'border-red-500' : 'border-gray-300'}`}
-                      placeholder="Nama Bisnis *"
-                    />
-                    {businessErrors.name && <span className="text-[10px] text-red-500">{businessErrors.name.message}</span>}
-                  </div>
-                  <div>
-                    <input
-                      {...registerBusiness("phone")}
-                      className="w-full h-11 px-3 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/50 outline-none"
-                      placeholder="Nomor Telepon (Opsional)"
-                    />
-                  </div>
-                  <button type="submit" className="w-full h-10 bg-primary text-white text-sm rounded-md font-medium hover:bg-primary/90">
-                    Simpan Bisnis
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowBusinessForm(true)}
-                className="w-full bg-white rounded-lg shadow-sm border border-dashed border-gray-300 p-4 flex items-center justify-center gap-2 text-gray-500 hover:text-primary hover:border-primary hover:bg-primary/5 transition-colors text-sm font-semibold"
-              >
-                <Plus size={18} /> Tambah Bisnis Baru
-              </button>
-            )}
-
             {/* Empty State */}
-            {businesses.length === 0 && !showBusinessForm && (
+            {businesses.length === 0 && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 text-center">
                 <Briefcase size={40} className="mx-auto text-gray-300 mb-3" />
                 <h3 className="text-base font-bold text-gray-900 mb-1">Belum ada profil bisnis</h3>
-                <p className="text-sm text-gray-500 mb-4">Tambahkan profil bisnis Anda untuk menyimpan alamat pengiriman.</p>
-                <button
-                  onClick={() => setShowBusinessForm(true)}
-                  className="h-10 px-5 bg-primary text-white text-sm rounded-md font-medium hover:bg-primary/90 inline-flex items-center gap-2"
-                >
-                  <Plus size={16} /> Buat Profil Bisnis
-                </button>
+                <p className="text-sm text-gray-500">Hubungi admin untuk menambahkan bisnis dan alamat.</p>
               </div>
             )}
 

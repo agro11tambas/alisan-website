@@ -7,28 +7,13 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ShoppingBag, ChevronRight, MessageCircle, MapPin, Plus, Briefcase, User, Edit2, X } from "lucide-react";
+import { ShoppingBag, ChevronRight, MessageCircle, MapPin, Briefcase, User, Edit2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { informationService } from "@/services/informationService";
 import { orderService } from "@/services/orderService";
 import { Discount, getActiveDiscounts } from "@/services/discountService";
 import { calculateDiscountAmount } from "@/utils/discountUtils";
-import api from "@/services/api";
-
-const addressSchema = z.object({
-  businessName: z.string().optional(),
-  completeAddress: z.string().min(10, "Harap berikan alamat lengkap"),
-  googleMapsLink: z.string().optional(),
-  isDefault: z.boolean().optional(),
-});
-type AddressFormValues = z.infer<typeof addressSchema>;
-
-const businessSchema = z.object({
-  name: z.string().min(3, "Nama bisnis wajib diisi"),
-  phone: z.string().optional(),
-});
-type BusinessFormValues = z.infer<typeof businessSchema>;
 
 const guestSchema = z.object({
   businessName: z.string().optional(),
@@ -45,24 +30,16 @@ export default function CheckoutPage() {
   
   const cart = useCartStore();
   const selectedItems = cart.items.filter(i => i.isSelected !== false);
-  const { customer, loading: customerLoading, isLoggedIn, refreshCustomer } = useCurrentCustomer();
+  const { customer, loading: customerLoading, isLoggedIn } = useCurrentCustomer();
   const router = useRouter();
   
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedAddressId, setSelectedAddressId] = useState<number | string | null>(null);
   
-  const [formMode, setFormMode] = useState<'none' | 'newBusiness' | 'newAddress' | 'guest'>('none');
+  const [formMode, setFormMode] = useState<'none' | 'guest'>('none');
   const [guestData, setGuestData] = useState<GuestFormValues | null>(null);
 
-  const { register: registerAddress, handleSubmit: handleSubmitAddress, reset: resetAddress, formState: { errors: addressErrors } } = useForm<AddressFormValues>({
-    resolver: zodResolver(addressSchema),
-  });
-
-  const { register: registerBusiness, handleSubmit: handleSubmitBusiness, reset: resetBusiness, formState: { errors: businessErrors } } = useForm<BusinessFormValues>({
-    resolver: zodResolver(businessSchema),
-  });
-
-  const { register: registerGuest, handleSubmit: handleSubmitGuest, reset: resetGuest, formState: { errors: guestErrors } } = useForm<GuestFormValues>({
+  const { register: registerGuest, handleSubmit: handleSubmitGuest, formState: { errors: guestErrors } } = useForm<GuestFormValues>({
     resolver: zodResolver(guestSchema),
   });
 
@@ -102,34 +79,6 @@ export default function CheckoutPage() {
   }, [isMounted, customerLoading, isLoggedIn, customer, selectedCustomerId, selectedAddressId, guestData]);
 
   if (!isMounted || selectedItems.length === 0) return null;
-
-  const handleSaveBusiness = async (data: BusinessFormValues) => {
-    try {
-      await api.post('/ecommerce/auth/businesses', data);
-      await refreshCustomer();
-      setFormMode('none');
-      resetBusiness();
-    } catch (e) {
-      alert("Gagal menambahkan bisnis");
-    }
-  };
-
-  const handleSaveAddress = async (data: AddressFormValues) => {
-    if (!selectedCustomerId) return;
-    try {
-      await api.post(`/ecommerce/auth/businesses/${selectedCustomerId}/addresses`, {
-        business_name: data.businessName,
-        address: data.completeAddress,
-        google_maps: data.googleMapsLink,
-        is_default: data.isDefault
-      });
-      await refreshCustomer();
-      setFormMode('none');
-      resetAddress();
-    } catch (e) {
-      alert("Gagal menambahkan alamat");
-    }
-  };
 
   const handleSaveGuest = (data: GuestFormValues) => {
     setGuestData(data);
@@ -341,13 +290,6 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               ))}
-              <div 
-                onClick={() => setFormMode('newBusiness')}
-                className="border border-dashed border-gray-300 rounded-md p-3 cursor-pointer flex items-center justify-center gap-2 text-gray-500 hover:text-primary hover:border-primary hover:bg-primary/5 transition-colors"
-              >
-                <Plus size={16} />
-                <span className="text-sm font-medium">Tambah Bisnis</span>
-              </div>
             </div>
           </div>
         )}
@@ -355,19 +297,13 @@ export default function CheckoutPage() {
         {/* Address Selector */}
         {hasBusinesses && selectedCustomerId && formMode === 'none' && (
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-              <span>Alamat Pengiriman</span>
-              <button onClick={() => setFormMode('newAddress')} className="text-primary hover:text-primary/80 flex items-center gap-1 normal-case">
-                <Plus size={14} /> Tambah Alamat
-              </button>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+              Alamat Pengiriman
             </label>
             
             {!hasAddresses ? (
               <div className="text-center p-4 border rounded-md border-gray-200 bg-gray-50">
-                <p className="text-sm text-gray-500 mb-2">Belum ada alamat untuk bisnis ini.</p>
-                <button onClick={() => setFormMode('newAddress')} className="text-primary text-sm font-medium hover:underline">
-                  Tambah Alamat Sekarang
-                </button>
+                <p className="text-sm text-gray-500">Belum ada alamat. Hubungi admin untuk menambahkan alamat pengiriman.</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -400,72 +336,12 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* New Business Form */}
-        {formMode === 'newBusiness' && (
-          <div className="border border-gray-200 rounded-md p-3">
-             <div className="flex items-center justify-between mb-3">
-               <h3 className="text-sm font-bold text-gray-900">Tambah Bisnis Baru</h3>
-               {hasBusinesses && (
-                 <button onClick={() => setFormMode('none')} className="text-gray-400 hover:text-gray-600">
-                   <X size={18} />
-                 </button>
-               )}
-             </div>
-             <form onSubmit={handleSubmitBusiness(handleSaveBusiness)} className="space-y-3">
-               <div>
-                 <input {...registerBusiness("name")} className={`w-full h-11 px-3 text-sm border rounded-md focus:ring-1 focus:ring-primary/50 outline-none ${businessErrors.name ? 'border-red-500' : 'border-gray-300'}`} placeholder="Nama Bisnis *" />
-                 {businessErrors.name && <span className="text-[10px] text-red-500">{businessErrors.name.message}</span>}
-               </div>
-               <div>
-                 <input {...registerBusiness("phone")} className="w-full h-11 px-3 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/50 outline-none" placeholder="Nomor Telepon (Opsional)" />
-               </div>
-               <button type="submit" className="w-full h-10 bg-primary text-white text-sm rounded-md font-medium hover:bg-primary/90">
-                 Simpan Bisnis
-               </button>
-             </form>
-          </div>
-        )}
-
-        {/* New Address Form */}
-        {formMode === 'newAddress' && (
-          <div className="border border-gray-200 rounded-md p-3">
-            <div className="flex items-center justify-between mb-3">
-               <h3 className="text-sm font-bold text-gray-900">Tambah Alamat Baru</h3>
-               <button onClick={() => setFormMode('none')} className="text-gray-400 hover:text-gray-600">
-                 <X size={18} />
-               </button>
-             </div>
-             <form onSubmit={handleSubmitAddress(handleSaveAddress)} className="space-y-3">
-              <div>
-                <input {...registerAddress("businessName")} className="w-full h-11 px-3 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/50 outline-none" placeholder="Nama Bisnis/Cabang (Opsional)" />
-              </div>
-              <div>
-                <textarea {...registerAddress("completeAddress")} rows={3} className={`w-full p-3 text-sm border rounded-md focus:ring-1 focus:ring-primary/50 outline-none min-h-24 ${addressErrors.completeAddress ? 'border-red-500' : 'border-gray-300'}`} placeholder="Alamat Lengkap *"></textarea>
-                {addressErrors.completeAddress && <span className="text-[10px] text-red-500">{addressErrors.completeAddress.message}</span>}
-              </div>
-              <div>
-                <input {...registerAddress("googleMapsLink")} className="w-full h-11 px-3 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/50 outline-none" placeholder="Tautan Google Maps (Opsional)" />
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="isDefault" {...registerAddress("isDefault")} className="rounded text-primary focus:ring-primary w-4 h-4" />
-                <label htmlFor="isDefault" className="text-sm font-medium text-gray-700 cursor-pointer">Jadikan utama</label>
-              </div>
-              <button type="submit" className="w-full h-10 bg-primary text-white text-sm rounded-md font-medium hover:bg-primary/90">
-                Simpan Alamat
-              </button>
-             </form>
-          </div>
-        )}
-
         {/* Initial Empty State for Users with No Business */}
         {!hasBusinesses && formMode === 'none' && (
            <div className="text-center py-6">
              <Briefcase size={32} className="mx-auto text-gray-300 mb-3" />
              <h3 className="text-sm font-bold text-gray-900 mb-1">Belum ada profil bisnis</h3>
-             <p className="text-xs text-gray-500 mb-4">Tambahkan profil bisnis Anda untuk menyimpan alamat pengiriman.</p>
-             <button onClick={() => setFormMode('newBusiness')} className="h-10 px-4 bg-primary text-white text-sm rounded-md font-medium hover:bg-primary/90 inline-flex items-center gap-2">
-               <Plus size={16} /> Buat Profil Bisnis
-             </button>
+             <p className="text-xs text-gray-500">Hubungi admin untuk menambahkan bisnis dan alamat pengiriman.</p>
            </div>
         )}
       </div>
