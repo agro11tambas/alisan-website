@@ -4,6 +4,7 @@ import { Discount } from '@/services/discountService';
 export const calculateItemDiscounts = (items: CartItem[], discounts: Discount[]): Record<string, number> => {
   const itemDiscounts: Record<string, number> = {};
   if (!discounts || discounts.length === 0) return itemDiscounts;
+  const eligibleDiscounts: Record<string, Discount[]> = {};
   
   const categoryQty: Record<string, number> = {};
   const categoryTotal: Record<string, number> = {};
@@ -34,7 +35,7 @@ export const calculateItemDiscounts = (items: CartItem[], discounts: Discount[])
   });
   
   discounts.forEach(discount => {
-    let appliesToItemIds: string[] = [];
+    const appliesToItemIds = new Set<string>();
     
     if (discount.apply_on === 'Product') {
       discount.products.forEach(pId => {
@@ -45,7 +46,7 @@ export const calculateItemDiscounts = (items: CartItem[], discounts: Discount[])
           : total >= discount.minimum_qty_or_amount;
         if (isEligible) {
           items.forEach(item => {
-            if (item.erpProductId === String(pId)) appliesToItemIds.push(item.id);
+            if (item.erpProductId === String(pId)) appliesToItemIds.add(item.id);
           });
         }
       });
@@ -59,7 +60,7 @@ export const calculateItemDiscounts = (items: CartItem[], discounts: Discount[])
         if (isEligible) {
           items.forEach(item => {
             if (item.erpCategoryIds?.includes(String(cId))) {
-              appliesToItemIds.push(item.id);
+              appliesToItemIds.add(item.id);
             }
           });
         }
@@ -76,24 +77,33 @@ export const calculateItemDiscounts = (items: CartItem[], discounts: Discount[])
         if (isEligible) {
           items.forEach(item => {
             if (item.categories?.includes(String(cId))) {
-              appliesToItemIds.push(item.id);
+              appliesToItemIds.add(item.id);
             }
           });
         }
       });
     }
     
-    items.forEach(item => {
-      if (appliesToItemIds.includes(item.id)) {
-        let discountPerUnit = 0;
-        if (discount.type === 'Percentage') {
-          discountPerUnit = item.price * (discount.amount / 100);
-        } else {
-          discountPerUnit = discount.amount;
-        }
-        itemDiscounts[item.id] = (itemDiscounts[item.id] || 0) + (discountPerUnit * item.quantity);
-      }
+    appliesToItemIds.forEach(itemId => {
+      eligibleDiscounts[itemId] = [...(eligibleDiscounts[itemId] || []), discount];
     });
+  });
+
+  items.forEach(item => {
+    const applicableDiscounts = eligibleDiscounts[item.id] || [];
+    if (applicableDiscounts.length === 0) return;
+
+    // Quantity/amount tiers are alternatives, not cumulative discounts.
+    // Pick the single best eligible tier for this item.
+    const bestDiscountPerUnit = applicableDiscounts.reduce((best, discount) => {
+      const discountPerUnit = discount.type === 'Percentage'
+        ? item.price * (discount.amount / 100)
+        : discount.amount;
+
+      return Math.max(best, Math.min(item.price, discountPerUnit));
+    }, 0);
+
+    itemDiscounts[item.id] = bestDiscountPerUnit * item.quantity;
   });
   
   return itemDiscounts;
