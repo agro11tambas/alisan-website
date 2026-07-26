@@ -50,6 +50,7 @@ export type ProductGroup = {
   totalSold: number;
   productGroupName?: string;
   lidGroupName?: string;
+  unitName?: string;
   products: Product[];
 };
 
@@ -78,6 +79,7 @@ export type CartItem = {
   stock: number;
   minOrder: number;
   orderStep: number;
+  unitName?: string;
   combinationId?: number;
   categories?: string[];
   erpProductId?: string;

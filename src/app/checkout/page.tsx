@@ -168,7 +168,7 @@ export default function CheckoutPage() {
         } else {
           message += `${index + 1}. ${item.groupName} - ${item.mainProductName}\n`;
         }
-        message += `Rp ${item.price.toLocaleString('id-ID')} x ${item.quantity.toLocaleString('id-ID')}pcs = Rp ${itemSubtotal.toLocaleString('id-ID')}\n\n`;
+        message += `Rp ${item.price.toLocaleString('id-ID')} x ${item.quantity.toLocaleString('id-ID')} ${item.unitName || "Pcs"} = Rp ${itemSubtotal.toLocaleString('id-ID')}\n\n`;
       });
       
       message += `━━━━━━━━━━━━━━━\n`;
@@ -418,7 +418,7 @@ export default function CheckoutPage() {
                           ) : (
                             <span className="font-medium text-green-600">Rp {itemPrice.toLocaleString('id-ID')}</span>
                           )}
-                          <span className="text-gray-400">x {item.quantity.toLocaleString('id-ID')}</span>
+                          <span className="text-gray-400">x {item.quantity.toLocaleString('id-ID')} {item.unitName || "Pcs"}</span>
                         </div>
                         <div className="mt-1.5">
                           {itemDiscount > 0 ? (

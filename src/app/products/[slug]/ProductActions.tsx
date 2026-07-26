@@ -130,7 +130,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
     addItem(group, selectedProduct, quantity, selectedLid || undefined);
     toast.success("Berhasil Ditambahkan", {
-      description: `${quantity}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`
+      description: `${quantity.toLocaleString("id-ID")}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`
     });
   };
 
@@ -291,7 +291,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                 <Minus size={14} />
               </button>
               <div className="w-14 h-9 flex items-center justify-center border-l border-r border-gray-300 text-sm font-medium bg-gray-50">
-                {quantity}
+                {quantity.toLocaleString("id-ID")}
               </div>
               <button 
                 onClick={handleIncrease}
@@ -449,7 +449,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                   <Minus size={14} />
                 </button>
                 <div className="w-12 h-8 flex items-center justify-center border-l border-r border-gray-200 text-sm font-medium">
-                  {quantity}
+                  {quantity.toLocaleString("id-ID")}
                 </div>
                 <button 
                   onClick={handleIncrease}

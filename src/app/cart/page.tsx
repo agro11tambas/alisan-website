@@ -129,24 +129,29 @@ export default function CartPage() {
                                   )}
                                 </td>
                                 <td className="block sm:table-cell align-middle pr-0 sm:pr-8">
-                                  <div className="flex sm:mx-auto items-center border border-gray-200 rounded-sm w-fit bg-white">
-                                    <button
-                                      onClick={() => cart.updateQuantity(item.id, Math.max(item.minOrder, item.quantity - item.orderStep))}
-                                      disabled={item.quantity <= item.minOrder}
-                                      className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                                    >
-                                      <Minus size={14} />
-                                    </button>
-                                    <div className="min-w-[40px] px-2 sm:min-w-[48px] h-8 flex items-center justify-center border-x border-gray-200 text-sm font-medium bg-white">
-                                      {item.quantity}
+                                  <div className="flex items-center gap-2 sm:justify-center">
+                                    <div className="flex items-center border border-gray-200 rounded-sm w-fit bg-white">
+                                      <button
+                                        onClick={() => cart.updateQuantity(item.id, Math.max(item.minOrder, item.quantity - item.orderStep))}
+                                        disabled={item.quantity <= item.minOrder}
+                                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                      >
+                                        <Minus size={14} />
+                                      </button>
+                                      <div className="min-w-[40px] px-2 sm:min-w-[48px] h-8 flex items-center justify-center border-x border-gray-200 text-sm font-medium bg-white">
+                                        {item.quantity.toLocaleString("id-ID")}
+                                      </div>
+                                      <button
+                                        onClick={() => cart.updateQuantity(item.id, Math.min(item.stock, item.quantity + item.orderStep))}
+                                        disabled={(item.quantity + item.orderStep) > item.stock}
+                                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                      >
+                                        <Plus size={14} />
+                                      </button>
                                     </div>
-                                    <button
-                                      onClick={() => cart.updateQuantity(item.id, Math.min(item.stock, item.quantity + item.orderStep))}
-                                      disabled={(item.quantity + item.orderStep) > item.stock}
-                                      className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                                    >
-                                      <Plus size={14} />
-                                    </button>
+                                    <span className="inline-flex h-8 items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs font-semibold text-gray-700">
+                                      {item.unitName || "Pcs"}
+                                    </span>
                                   </div>
                                 </td>
                                 <td className="block sm:table-cell align-middle text-left">

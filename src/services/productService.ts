@@ -81,6 +81,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
         : (ecProduct.main_image ? [ecProduct.main_image] : ["/image/Placeholder.jpg"]),
       productGroupName: productOptionGroup?.name || "Opsi Produk",
       lidGroupName: lidOptionGroup?.name || "Opsi Tutup",
+      unitName: ecProduct.unit?.name || "Pcs",
       products,
       _lids: addOns,
       _combinations: combinations,

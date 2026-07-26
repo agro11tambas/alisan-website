@@ -84,6 +84,7 @@ export const useCartStore = create<CartState>()(
               stock: addOn ? Math.min(product.stock, addOn.stock) : product.stock,
               minOrder: product.minimumOrder || 1,
               orderStep: product.orderStep || 1,
+              unitName: group.unitName || "Pcs",
               combinationId,
               categories: group.categories,
               erpProductId: product.erpProductId,
