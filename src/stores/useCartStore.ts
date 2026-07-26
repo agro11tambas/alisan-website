@@ -10,6 +10,7 @@ interface CartState {
   toggleSelection: (cartItemId: string) => void;
   toggleAllSelection: (selected: boolean) => void;
   clearCart: () => void;
+  replaceItems: (items: CartItem[]) => void;
   clearSelectedItems: () => void;
   getSubtotal: () => number;
   getTotalCount: () => number;
@@ -123,6 +124,7 @@ export const useCartStore = create<CartState>()(
       },
       
       clearCart: () => set({ items: [] }),
+      replaceItems: (items) => set({ items }),
       clearSelectedItems: () => set((state) => ({
         items: state.items.filter((item) => item.isSelected === false)
       })),

@@ -13,7 +13,7 @@ import Image from "next/image";
 import { informationService } from "@/services/informationService";
 import { orderService } from "@/services/orderService";
 import { Discount, getActiveDiscounts } from "@/services/discountService";
-import { calculateDiscountAmount } from "@/utils/discountUtils";
+import { calculateDiscountAmount, calculateItemDiscounts } from "@/utils/discountUtils";
 
 const guestSchema = z.object({
   businessName: z.string().optional(),
@@ -30,6 +30,10 @@ export default function CheckoutPage() {
   
   const cart = useCartStore();
   const selectedItems = cart.items.filter(i => i.isSelected !== false);
+  const itemDiscounts = calculateItemDiscounts(selectedItems, discounts);
+  const subtotal = cart.getSubtotal();
+  const discountAmount = calculateDiscountAmount(selectedItems, discounts);
+  const totalPayment = subtotal - discountAmount;
   const { customer, loading: customerLoading, isLoggedIn } = useCurrentCustomer();
   const router = useRouter();
   
@@ -385,49 +389,72 @@ export default function CheckoutPage() {
 
             {/* 2. ORDER ITEM SECTION */}
             <div className="bg-white border-b sm:border sm:rounded-md border-gray-200 mb-2 sm:mb-4">
-               {selectedItems.map(item => (
-                 <div key={item.id} className="flex gap-3 px-3 py-3 border-b border-gray-50 last:border-0">
-                    <div className="relative w-16 h-16 rounded-sm overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
-                      {item.image && (
-                        <Image src={item.image} alt={item.displayName} fill className="object-cover" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-base font-bold text-gray-900 line-clamp-2 leading-tight">{item.groupName}</h4>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {item.mainProductName}
-                        {item.type === 'bundle' && item.addOnProductName && ` + ${item.addOnProductName}`}
-                        {' - Rp ' + item.price.toLocaleString('id-ID')}
+               {selectedItems.map(item => {
+                 const itemDiscount = itemDiscounts[item.id] || 0;
+                 const itemPrice = item.price;
+                 const itemDiscountedPrice = itemPrice - (itemDiscount / item.quantity);
+                 const itemTotal = itemPrice * item.quantity;
+                 const itemDiscountedTotal = itemTotal - itemDiscount;
+
+                 return (
+                   <div key={item.id} className="flex gap-3 px-3 py-3 border-b border-gray-50 last:border-0">
+                      <div className="relative w-16 h-16 rounded-sm overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
+                        {item.image && (
+                          <Image src={item.image} alt={item.displayName} fill className="object-cover" />
+                        )}
                       </div>
-                      <div className="mt-1.5">
-                        <span className="text-sm font-semibold text-primary">
-                          Rp {(item.price * item.quantity).toLocaleString('id-ID')}
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-base font-bold text-gray-900 line-clamp-2 leading-tight">{item.groupName}</h4>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {item.mainProductName}
+                          {item.type === 'bundle' && item.addOnProductName && ` + ${item.addOnProductName}`}
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 text-sm">
+                          {itemDiscount > 0 ? (
+                            <>
+                              <span className="line-through text-gray-400">Rp {itemPrice.toLocaleString('id-ID')}</span>
+                              <span className="font-medium text-green-600">Rp {itemDiscountedPrice.toLocaleString('id-ID')}</span>
+                            </>
+                          ) : (
+                            <span className="font-medium text-green-600">Rp {itemPrice.toLocaleString('id-ID')}</span>
+                          )}
+                          <span className="text-gray-400">x {item.quantity.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className="mt-1.5">
+                          {itemDiscount > 0 ? (
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="line-through text-gray-400">Rp {itemTotal.toLocaleString('id-ID')}</span>
+                              <span className="font-semibold text-green-600">Rp {itemDiscountedTotal.toLocaleString('id-ID')}</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm font-semibold text-green-600">Rp {itemTotal.toLocaleString('id-ID')}</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                 </div>
-               ))}
+                   </div>
+                 );
+               })}
             </div>
 
             {/* 4. ORDER SUMMARY (Mobile) */}
             <div className="bg-white border-b sm:border sm:rounded-md border-gray-200 px-3 py-3 space-y-2 lg:hidden">
                <div className="flex justify-between">
                  <span className="text-sm text-gray-600">Subtotal untuk Produk</span>
-                 <span className="text-sm text-gray-900">Rp {cart.getSubtotal().toLocaleString('id-ID')}</span>
+                 <span className="text-sm text-green-600">Rp {subtotal.toLocaleString('id-ID')}</span>
                </div>
                <div className="flex justify-between">
                  <span className="text-sm text-gray-600">Total Ongkos Kirim</span>
                  <span className="text-sm text-gray-900">Via WhatsApp</span>
                </div>
-               {calculateDiscountAmount(selectedItems, discounts) > 0 && (
+               {discountAmount > 0 && (
                  <div className="flex justify-between">
                    <span className="text-sm text-green-600">Diskon</span>
-                   <span className="text-sm font-medium text-green-600">- Rp {calculateDiscountAmount(selectedItems, discounts).toLocaleString('id-ID')}</span>
+                   <span className="text-sm font-medium text-green-600">- Rp {discountAmount.toLocaleString('id-ID')}</span>
                  </div>
                )}
                <div className="flex justify-between pt-2 border-t border-gray-100">
                  <span className="text-sm font-bold text-gray-900">Total Pembayaran</span>
-                 <span className="text-base font-bold text-primary">Rp {(cart.getSubtotal() - calculateDiscountAmount(selectedItems, discounts)).toLocaleString('id-ID')}</span>
+                 <span className="text-base font-bold text-green-600">Rp {totalPayment.toLocaleString('id-ID')}</span>
                </div>
             </div>
 
@@ -442,21 +469,21 @@ export default function CheckoutPage() {
                </h2>
                <div className="flex justify-between">
                  <span className="text-sm text-gray-600">Subtotal Produk</span>
-                 <span className="text-sm text-gray-900">Rp {cart.getSubtotal().toLocaleString('id-ID')}</span>
+                 <span className="text-sm text-green-600">Rp {subtotal.toLocaleString('id-ID')}</span>
                </div>
                <div className="flex justify-between pb-3 border-b border-gray-100">
                  <span className="text-sm text-gray-600">Ongkos Kirim</span>
                  <span className="text-sm text-gray-900">Via WhatsApp</span>
                </div>
-               {calculateDiscountAmount(selectedItems, discounts) > 0 && (
+               {discountAmount > 0 && (
                  <div className="flex justify-between pb-3 border-b border-gray-100">
                    <span className="text-sm text-green-600">Diskon Promo</span>
-                   <span className="text-sm font-medium text-green-600">- Rp {calculateDiscountAmount(selectedItems, discounts).toLocaleString('id-ID')}</span>
+                   <span className="text-sm font-medium text-green-600">- Rp {discountAmount.toLocaleString('id-ID')}</span>
                  </div>
                )}
                <div className="flex justify-between pb-3">
                  <span className="text-sm font-bold text-gray-900">Total Pembayaran</span>
-                 <span className="text-base font-bold text-primary">Rp {(cart.getSubtotal() - calculateDiscountAmount(selectedItems, discounts)).toLocaleString('id-ID')}</span>
+                 <span className="text-base font-bold text-green-600">Rp {totalPayment.toLocaleString('id-ID')}</span>
                </div>
                <button
                   onClick={handleCheckout}
@@ -476,7 +503,14 @@ export default function CheckoutPage() {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-2px_10px_rgba(0,0,0,0.05)] px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+8px)] flex items-center justify-end gap-3 h-[60px]">
         <div className="flex flex-col items-end flex-1">
           <span className="text-[13px] text-gray-900">Total Pembayaran</span>
-          <span className="text-base font-bold text-primary leading-tight">Rp {(cart.getSubtotal() - calculateDiscountAmount(selectedItems, discounts)).toLocaleString('id-ID')}</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-base font-bold text-green-600 leading-tight">Rp {totalPayment.toLocaleString('id-ID')}</span>
+            {discountAmount > 0 && (
+              <span className="text-xs text-gray-400 line-through">
+                Rp {subtotal.toLocaleString('id-ID')}
+              </span>
+            )}
+          </div>
         </div>
         <button
           onClick={handleCheckout}

@@ -4,8 +4,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginPhoneSchema, LoginPhoneFormValues } from "@/validations";
 import { useCustomerLogin } from "@/hooks/use-customer-auth";
+import { useCurrentCustomer } from "@/hooks/use-current-customer";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
@@ -13,8 +14,37 @@ import axios from "axios";
 export default function LoginPage() {
   const router = useRouter();
   const { login, loading } = useCustomerLogin();
+  const { isLoggedIn, loading: isCheckingAuth } = useCurrentCustomer();
   const [serverError, setServerError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    const hasSensitiveCredentials =
+      currentUrl.searchParams.has("phoneNumber") ||
+      currentUrl.searchParams.has("password");
+
+    if (!hasSensitiveCredentials) {
+      return;
+    }
+
+    const requestedRedirect = currentUrl.searchParams.get("redirect");
+    const safeRedirect =
+      requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
+        ? requestedRedirect
+        : null;
+    const cleanUrl = safeRedirect
+      ? `/login?redirect=${encodeURIComponent(safeRedirect)}`
+      : "/login";
+
+    window.history.replaceState(window.history.state, "", cleanUrl);
+  }, []);
+
+  useEffect(() => {
+    if (!isCheckingAuth && isLoggedIn) {
+      router.replace("/");
+    }
+  }, [isCheckingAuth, isLoggedIn, router]);
 
   const {
     register,
@@ -48,6 +78,10 @@ export default function LoginPage() {
       setServerError(message || "Nomor HP atau password salah.");
     }
   };
+
+  if (isCheckingAuth || isLoggedIn) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-2 px-2 md:py-8 md:px-4">

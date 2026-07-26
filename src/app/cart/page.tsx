@@ -125,7 +125,7 @@ export default function CartPage() {
                                       <span className="text-green-600 sm:mt-0.5">Rp {itemDiscountedPrice.toLocaleString('id-ID')}</span>
                                     </div>
                                   ) : (
-                                    <span className="text-[13px] sm:text-sm font-medium text-gray-900">Rp {itemPrice.toLocaleString('id-ID')}</span>
+                                    <span className="text-[13px] sm:text-sm font-medium text-green-600">Rp {itemPrice.toLocaleString('id-ID')}</span>
                                   )}
                                 </td>
                                 <td className="block sm:table-cell align-middle pr-0 sm:pr-8">
@@ -151,12 +151,12 @@ export default function CartPage() {
                                 </td>
                                 <td className="block sm:table-cell align-middle text-left">
                                   {itemDiscount > 0 ? (
-                                    <div className="flex flex-row gap-2 sm:flex-col sm:gap-0 text-[13px] sm:text-sm font-bold text-primary items-center sm:items-start">
+                                    <div className="flex flex-row gap-2 sm:flex-col sm:gap-0 text-[13px] sm:text-sm font-bold text-green-600 items-center sm:items-start">
                                       <span className="line-through text-gray-400 font-normal">Rp {itemTotal.toLocaleString('id-ID')}</span>
                                       <span className="sm:mt-0.5">Rp {itemDiscountedTotal.toLocaleString('id-ID')}</span>
                                     </div>
                                   ) : (
-                                    <span className="text-[13px] sm:text-sm font-bold text-primary">Rp {itemTotal.toLocaleString('id-ID')}</span>
+                                    <span className="text-[13px] sm:text-sm font-bold text-green-600">Rp {itemTotal.toLocaleString('id-ID')}</span>
                                   )}
                                 </td>
                               </tr>
@@ -189,7 +189,7 @@ export default function CartPage() {
                 <h2 className="text-base font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">Ringkasan Belanja</h2>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-gray-600">Total Harga</span>
-                  <span className="text-sm font-medium text-gray-900">Rp {cart.getSubtotal().toLocaleString('id-ID')}</span>
+                  <span className="text-sm font-medium text-green-600">Rp {cart.getSubtotal().toLocaleString('id-ID')}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between items-center mb-2">
@@ -199,7 +199,7 @@ export default function CartPage() {
                 )}
                 <div className="flex justify-between items-center mb-4 mt-2 pt-2 border-t border-gray-100">
                   <span className="text-sm font-bold text-gray-900">Total Tagihan</span>
-                  <span className="text-lg font-bold text-primary">Rp {(cart.getSubtotal() - discountAmount).toLocaleString('id-ID')}</span>
+                  <span className="text-lg font-bold text-green-600">Rp {(cart.getSubtotal() - discountAmount).toLocaleString('id-ID')}</span>
                 </div>
                 <Link
                 href={selectedItems.length > 0 ? "/checkout" : "#"}
@@ -222,7 +222,7 @@ export default function CartPage() {
             <div className="flex flex-col justify-center">
               <span className="text-xs font-medium text-gray-500">Total Tagihan</span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-base font-bold text-primary">
+                <span className="text-base font-bold text-green-600">
                   Rp {(cart.getSubtotal() - discountAmount).toLocaleString('id-ID')}
                 </span>
                 {discountAmount > 0 && (
