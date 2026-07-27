@@ -174,6 +174,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   };
 
   const comboPricing = selectedProduct && selectedLid ? getCombinationPricing(selectedProduct.id, selectedLid.id) : null;
+  const canShowPrice = !lidSelectionRequired || Boolean(selectedLid);
   
   const displayPrice = selectedProduct 
     ? (
@@ -206,14 +207,20 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       <div className="mb-3 px-3 md:px-0">
         <div className="flex items-end gap-1 md:gap-2">
           {!selectedProduct && <span className="text-xs text-gray-500 mb-0.5">Mulai dari</span>}
-          {displayOriginalPrice && (
+          {canShowPrice && displayOriginalPrice && (
             <span className="text-sm font-medium text-gray-400 line-through mb-1">
               Rp {displayOriginalPrice.toLocaleString('id-ID')}
             </span>
           )}
-          <span className="text-2xl font-bold text-primary tracking-tight">
-            Rp {displayPrice.toLocaleString('id-ID')}
-          </span>
+          {canShowPrice ? (
+            <span className="text-2xl font-bold text-primary tracking-tight">
+              Rp {displayPrice.toLocaleString('id-ID')}
+            </span>
+          ) : (
+            <span className="text-sm font-semibold text-amber-600">
+              Pilih tutup untuk melihat harga
+            </span>
+          )}
         </div>
       </div>
 
@@ -304,7 +311,9 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                 <span className="text-gray-500"> · {group.lidGroupName || "Tutup"}: <span className="font-medium text-gray-900">{selectedLid ? selectedLid.name : `Tanpa ${group.lidGroupName || "Tutup"}`}</span></span>
               )}
             </div>
-            <span className="font-bold text-primary whitespace-nowrap">Rp {displayPrice.toLocaleString('id-ID')}</span>
+            <span className={`font-bold whitespace-nowrap ${canShowPrice ? 'text-primary' : 'text-amber-600'}`}>
+              {canShowPrice ? `Rp ${displayPrice.toLocaleString('id-ID')}` : 'Pilih tutup'}
+            </span>
           </div>
         </div>
       )}
@@ -396,14 +405,20 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                 </span>
               </button>
               <div className="flex-1 pt-1 pr-6">
-                {displayOriginalPrice && (
+                {canShowPrice && displayOriginalPrice && (
                   <div className="text-xs text-gray-400 line-through">
                     Rp {displayOriginalPrice.toLocaleString('id-ID')}
                   </div>
                 )}
-                <div className="text-primary font-bold text-lg mb-0.5">
-                  Rp {displayPrice.toLocaleString('id-ID')}
-                </div>
+                {canShowPrice ? (
+                  <div className="text-primary font-bold text-lg mb-0.5">
+                    Rp {displayPrice.toLocaleString('id-ID')}
+                  </div>
+                ) : (
+                  <div className="text-sm font-semibold text-amber-600 mb-0.5">
+                    Pilih tutup untuk melihat harga
+                  </div>
+                )}
                 <div className="text-sm text-gray-500 mb-0.5">
                   Stok: {selectedProduct ? maxStock : group.products.reduce((acc, p) => acc + p.stock, 0)}
                 </div>
