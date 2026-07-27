@@ -2,14 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { productService } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
-import ProductCard from "@/components/product/ProductCard";
+import FeaturedProductCarousel from "@/components/product/FeaturedProductCarousel";
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const [categories, groups] = await Promise.all([
     categoryService.getCategories(),
-    productService.getProductGroups({ limit: 10 }),
+    productService.getProductGroups({ limit: 5 }),
   ]);
 
   return (
@@ -87,10 +87,10 @@ export default async function Home() {
           <div className="flex items-center justify-between mb-1.5 md:mb-5">
             <div>
               <h2 className="text-lg md:text-2xl font-bold text-gray-900 md:mb-1 tracking-tight">
-                Produk Terlaris
+                Featured Product
               </h2>
               <p className="text-xs md:text-sm text-gray-500 hidden md:block">
-                Pilihan cup sablon paling diminati oleh pelanggan kami
+                Pilihan produk unggulan untuk kebutuhan bisnis Anda
               </p>
             </div>
             <Link
@@ -101,11 +101,7 @@ export default async function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-1.5 md:gap-6">
-            {groups.map((group) => (
-              <ProductCard key={group.id} group={group} />
-            ))}
-          </div>
+          <FeaturedProductCarousel groups={groups} />
         </div>
       </section>
     </div>

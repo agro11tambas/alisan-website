@@ -25,6 +25,9 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+  const allowWithoutLid = selectedProduct?.allowWithoutLid !== false;
+  const hasLidGroup = Boolean((group as ProductGroup & { _lids?: AddOnProduct[] })._lids?.length);
+  const lidSelectionRequired = Boolean(selectedProduct) && !allowWithoutLid && hasLidGroup;
 
   useEffect(() => {
     if (!isImagePreviewOpen) return;
@@ -42,8 +45,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       toast.error("Silakan pilih varian terlebih dahulu");
       return;
     }
-    handleAddToCart();
-    setIsSheetOpen(false);
+    if (handleAddToCart()) setIsSheetOpen(false);
   };
 
   useEffect(() => {
@@ -131,20 +133,28 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   };
 
   const handleAddToCart = () => {
-    if (!selectedProduct) return;
+    if (!selectedProduct) return false;
+
+    if (lidSelectionRequired && !selectedLid) {
+      toast.error("Silakan pilih tutup terlebih dahulu", {
+        description: "Produk ini wajib menggunakan tutup."
+      });
+      return false;
+    }
     
     if (!isLoggedIn) {
       toast.error("Silakan login", {
         description: "Anda harus login terlebih dahulu untuk menambah produk ke keranjang."
       });
       router.push("/login");
-      return;
+      return false;
     }
 
     addItem(group, selectedProduct, quantity, selectedLid || undefined);
     toast.success("Berhasil Ditambahkan", {
       description: `${quantity.toLocaleString("id-ID")}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`
     });
+    return true;
   };
 
 
@@ -242,8 +252,10 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
         <div className="border-t-[6px] border-gray-100 md:border-t md:border-gray-100 pt-3 md:pt-3 pb-2 px-3 md:px-0">
           <div className="flex justify-between items-center mb-2.5">
             <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">{group.lidGroupName || "Opsi Tutup"}</h3>
+            {lidSelectionRequired && <span className="text-[10px] font-semibold text-red-600">Wajib pilih tutup</span>}
           </div>
           <div className="flex flex-wrap gap-2 md:gap-2 pb-1">
+            {allowWithoutLid && (
             <button
               onClick={() => handleSelectLid(null)}
               className={`h-9 md:h-8 px-4 md:px-3 text-sm md:text-xs font-medium rounded-md border whitespace-nowrap shrink-0 transition-all duration-200 ${
@@ -254,6 +266,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             >
               Tanpa {group.lidGroupName || "Tutup"}
             </button>
+            )}
             {lids.map((lid) => {
               const isSelected = selectedLid?.id === lid.id;
               const isOutOfStock = lid.stock === 0;
@@ -287,7 +300,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             <div className="truncate pr-2">
               <span className="text-gray-500">Terpilih: </span>
               <span className="font-medium text-gray-900">{selectedProduct.name}</span>
-              {lids.length > 0 && (
+              {lids.length > 0 && (allowWithoutLid || selectedLid) && (
                 <span className="text-gray-500"> · {group.lidGroupName || "Tutup"}: <span className="font-medium text-gray-900">{selectedLid ? selectedLid.name : `Tanpa ${group.lidGroupName || "Tutup"}`}</span></span>
               )}
             </div>
@@ -341,7 +354,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
         <div className="flex gap-3">
           <button 
             onClick={handleAddToCart}
-            disabled={!selectedProduct}
+            disabled={!selectedProduct || (lidSelectionRequired && !selectedLid)}
             className="w-full h-10 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm rounded-md hover:bg-primary/90 transition-colors shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           >
             <ShoppingCart size={18} />
@@ -361,7 +374,10 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       </div>
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-0 pb-0 pt-3 h-[85vh] flex flex-col md:hidden z-[100] border-none">
+        <SheetContent
+          side="bottom"
+          className="data-[side=bottom]:h-[85dvh] data-[side=bottom]:max-h-[calc(100dvh-env(safe-area-inset-top))] gap-0 overflow-hidden rounded-t-2xl border-none px-0 pb-0 pt-3 md:hidden z-[100]"
+        >
           <SheetHeader className="px-4 pb-3 text-left border-b border-gray-100 shrink-0 relative">
             <div className="flex items-start gap-4">
               <button
@@ -401,7 +417,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             <SheetTitle className="sr-only">Pilih Varian</SheetTitle>
           </SheetHeader>
           
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 py-4 space-y-6">
             <div>
               <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">{group.productGroupName || "Varian Cup"}</h3>
               <div className="flex flex-wrap gap-2">
@@ -432,7 +448,9 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             {lids.length > 0 && selectedProduct && (
               <div>
                 <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">{group.lidGroupName || "Varian Tutup"}</h3>
+                {lidSelectionRequired && <p className="mb-2 text-xs font-semibold text-red-600">Wajib pilih tutup</p>}
                 <div className="flex flex-wrap gap-2">
+                  {allowWithoutLid && (
                   <button
                     onClick={() => handleSelectLid(null)}
                     className={`min-h-[36px] py-1 px-3 text-[13px] font-medium rounded-sm border shrink-0 transition-all duration-200 ${
@@ -443,6 +461,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                   >
                     Tanpa {group.lidGroupName || "Tutup"}
                   </button>
+                  )}
                   {lids.map((lid) => {
                     const isSelected = selectedLid?.id === lid.id;
                     const isOutOfStock = lid.stock === 0;
@@ -468,7 +487,10 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+          </div>
+
+          <div className="shrink-0 border-t border-gray-100 bg-white px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+            <div className="flex items-center justify-between pb-3">
               <span className="text-[13px] font-medium text-gray-800">Jumlah</span>
               <div className="flex items-center gap-2">
                 <div className="flex items-center border border-gray-200 rounded-sm">
@@ -495,12 +517,10 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                 </span>
               </div>
             </div>
-          </div>
-          
-          <div className="p-3 border-t border-gray-100 pb-[calc(env(safe-area-inset-bottom)+12px)]">
             <button 
               onClick={handleAddToCartFromSheet}
-              className={`w-full h-[44px] rounded flex items-center justify-center font-bold text-[15px] transition-colors ${!selectedProduct ? 'bg-gray-100 text-gray-400' : 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90'}`}
+              disabled={!selectedProduct || (lidSelectionRequired && !selectedLid)}
+              className={`w-full h-[44px] rounded flex items-center justify-center font-bold text-[15px] transition-colors ${!selectedProduct || (lidSelectionRequired && !selectedLid) ? 'bg-gray-100 text-gray-400' : 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90'}`}
             >
               Masukkan Keranjang
             </button>

@@ -15,6 +15,7 @@ export type Product = {
   stock: number;
   image?: string;
   gallery?: string[];
+  allowWithoutLid?: boolean;
   description?: string;
   optionName?: string;
   minimumOrder: number;

@@ -6,6 +6,7 @@ import Footer from "@/components/common/Footer";
 import FloatingWhatsAppButton from "@/components/common/FloatingWhatsAppButton";
 import CartSync from "@/components/common/CartSync";
 import { Toaster } from "@/components/ui/sonner";
+import NavigationHistory from "@/components/common/NavigationHistory";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen flex flex-col bg-gray-50/50`}
       >
         <CartSync />
+        <NavigationHistory />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

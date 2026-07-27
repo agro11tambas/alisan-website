@@ -2,14 +2,16 @@
 
 import { ArrowLeft, Search, Share2, ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCartStore } from "@/stores/useCartStore";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { getInternalBackDestination } from "@/lib/navigationHistory";
 
 export default function ProductMobileHeader() {
   const router = useRouter();
+  const pathname = usePathname();
   const cartCount = useCartStore((state) => state.items.length);
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,6 +23,11 @@ export default function ProductMobileHeader() {
     }
   };
 
+  const handleBack = () => {
+    const destination = getInternalBackDestination(pathname);
+    router.push(destination);
+  };
+
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
@@ -29,21 +36,22 @@ export default function ProductMobileHeader() {
           title: document.title,
           url: url,
         });
-      } catch (err) {
+      } catch {
         // User cancelled or share failed silently
       }
     } else {
       try {
         await navigator.clipboard.writeText(url);
         toast.success("Tautan disalin ke papan klip");
-      } catch (err) {
+      } catch {
         toast.error("Gagal menyalin tautan");
       }
     }
   };
 
   useEffect(() => {
-    setIsMounted(true);
+    const animationFrame = window.requestAnimationFrame(() => setIsMounted(true));
+    return () => window.cancelAnimationFrame(animationFrame);
   }, []);
 
   return (
@@ -58,7 +66,8 @@ export default function ProductMobileHeader() {
       
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm h-14 flex items-center justify-between px-2 gap-2 border-b border-gray-100 shadow-sm">
         <button 
-          onClick={() => router.back()}
+          onClick={handleBack}
+          aria-label="Kembali ke halaman sebelumnya"
           className="w-10 h-10 flex-shrink-0 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
         >
           <ArrowLeft size={22} />

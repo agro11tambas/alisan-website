@@ -27,6 +27,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           orderStep: Number(ecProduct.multiple_qty || 1),
           image: opt.image || imageUrl,
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
+          allowWithoutLid: Boolean(opt.allow_without_lid ?? true),
           erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
         };
       });
