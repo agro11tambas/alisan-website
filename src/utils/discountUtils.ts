@@ -6,22 +6,19 @@ export const calculateItemDiscounts = (items: CartItem[], discounts: Discount[])
   if (!discounts || discounts.length === 0) return itemDiscounts;
 
   const eligibleDiscounts: Record<string, Discount[]> = {};
-  const productQty: Record<string, number> = {};
-  const productTotal: Record<string, number> = {};
-
-  // The threshold is accumulated only across cart lines belonging to the same ERP product.
-  items.forEach(item => {
-    if (!item.erpProductId) return;
-
-    productQty[item.erpProductId] = (productQty[item.erpProductId] || 0) + item.quantity;
-    productTotal[item.erpProductId] = (productTotal[item.erpProductId] || 0) + (item.price * item.quantity);
-  });
+  const orderQuantity = items.reduce((total, item) => total + item.quantity, 0);
+  const orderTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   discounts.forEach(discount => {
-    items.forEach(item => {
-      if (!item.erpProductId) return;
+    const isEligible = discount.minimum_based_on === 'Quantity of Items'
+      ? orderQuantity >= discount.minimum_qty_or_amount
+      : orderTotal >= discount.minimum_qty_or_amount;
 
+    if (!isEligible) return;
+
+    items.forEach(item => {
       const appliesToProduct = discount.apply_on === 'Product'
+        && !!item.erpProductId
         && discount.products.some(productId => String(productId) === item.erpProductId);
       const appliesToErpCategory = discount.apply_on === 'Category'
         && discount.categories.some(categoryId => item.erpCategoryIds?.includes(String(categoryId)));
@@ -30,15 +27,7 @@ export const calculateItemDiscounts = (items: CartItem[], discounts: Discount[])
 
       if (!appliesToProduct && !appliesToErpCategory && !appliesToEcommerceCategory) return;
 
-      const quantity = productQty[item.erpProductId] || 0;
-      const total = productTotal[item.erpProductId] || 0;
-      const isEligible = discount.minimum_based_on === 'Quantity of Items'
-        ? quantity >= discount.minimum_qty_or_amount
-        : total >= discount.minimum_qty_or_amount;
-
-      if (isEligible) {
-        eligibleDiscounts[item.id] = [...(eligibleDiscounts[item.id] || []), discount];
-      }
+      eligibleDiscounts[item.id] = [...(eligibleDiscounts[item.id] || []), discount];
     });
   });
 

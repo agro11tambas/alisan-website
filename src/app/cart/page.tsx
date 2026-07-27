@@ -208,7 +208,7 @@ export default function CartPage() {
                 </div>
                 <Link
                 href={selectedItems.length > 0 ? "/checkout" : "#"}
-                className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-bold transition-all ${selectedItems.length > 0 ? 'bg-primary text-white hover:bg-primary/90 active:scale-[0.98] shadow-sm hover:shadow' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                className={`w-full flex items-center justify-center gap-2 py-4 px-5 rounded-xl text-[15px] font-bold transition-all ${selectedItems.length > 0 ? 'bg-primary text-white hover:bg-primary/90 active:scale-[0.98] shadow-sm hover:shadow' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
                 onClick={(e) => { if (selectedItems.length === 0) e.preventDefault(); }}
               >
                 Checkout ({selectedItems.length})
@@ -223,7 +223,7 @@ export default function CartPage() {
       {/* Mobile Sticky Checkout Bar */}
       {cart.items.length > 0 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+8px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-          <div className="flex items-center justify-between h-10">
+          <div className="flex items-center justify-between h-11">
             <div className="flex flex-col justify-center">
               <span className="text-xs font-medium text-gray-500">Total Tagihan</span>
               <div className="flex items-baseline gap-1.5">
@@ -240,7 +240,7 @@ export default function CartPage() {
             <Link 
               href={selectedItems.length > 0 ? "/checkout" : "#"}
               onClick={(e) => { if (selectedItems.length === 0) e.preventDefault(); }}
-              className={`h-10 px-5 flex items-center justify-center text-sm font-medium rounded-md transition-colors w-auto ${selectedItems.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+              className={`h-11 px-6 flex items-center justify-center text-sm font-semibold rounded-md transition-colors w-auto ${selectedItems.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             >
               Checkout ({selectedItems.length})
             </Link>

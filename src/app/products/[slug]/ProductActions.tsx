@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ProductGroup, Product, AddOnProduct } from "@/types";
 import { useCartStore } from "@/stores/useCartStore";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Minus, Plus, ShoppingCart, AlertCircle, MessageSquare, Heart, ShieldCheck } from "lucide-react";
+import { Minus, Plus, ShoppingCart, AlertCircle, MessageSquare, Heart, ShieldCheck, ZoomIn, X } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
 
@@ -23,6 +24,18 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   const { isLoggedIn } = useCurrentCustomer();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isImagePreviewOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsImagePreviewOpen(false);
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isImagePreviewOpen]);
 
   const handleAddToCartFromSheet = () => {
     if (!selectedProduct) {
@@ -169,6 +182,12 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
               : undefined)
       )
     : undefined;
+
+  const currentProductImage =
+    (selectedProduct && selectedLid ? getCombinationImage(selectedProduct.id, selectedLid.id) : null)
+    || selectedProduct?.image
+    || group.image
+    || "/image/Placeholder.jpg";
     
   return (
     <div className="mt-2 pb-20 md:pb-0">
@@ -301,6 +320,9 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                 <Plus size={14} />
               </button>
             </div>
+            <span className="inline-flex h-9 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-xs font-semibold text-gray-700">
+              {group.unitName || "Pcs"}
+            </span>
             <span className="text-xs text-gray-500 md:ml-3">
               Maksimal Qty: <span className="font-medium text-gray-700">{selectedProduct ? maxStock : group.products.reduce((acc, p) => acc + p.stock, 0)}</span>
             </span>
@@ -342,13 +364,21 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
         <SheetContent side="bottom" className="rounded-t-2xl px-0 pb-0 pt-3 h-[85vh] flex flex-col md:hidden z-[100] border-none">
           <SheetHeader className="px-4 pb-3 text-left border-b border-gray-100 shrink-0 relative">
             <div className="flex items-start gap-4">
-              <div className="w-24 h-24 rounded-md overflow-hidden bg-gray-100 shrink-0 border border-gray-200 relative -mt-6 bg-white p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setIsImagePreviewOpen(true)}
+                aria-label="Perbesar gambar produk"
+                className="group/image w-24 h-24 rounded-md overflow-hidden bg-gray-100 shrink-0 border border-gray-200 relative -mt-6 bg-white p-1 shadow-sm cursor-zoom-in"
+              >
                 <img 
-                  src={(selectedProduct && selectedLid ? getCombinationImage(selectedProduct.id, selectedLid.id) : null) || selectedProduct?.image || group.image || "/image/Placeholder.jpg"} 
-                  alt="Product" 
-                  className="w-full h-full object-contain rounded"
+                  src={currentProductImage}
+                  alt={selectedProduct?.name || group.name}
+                  className="w-full h-full object-contain rounded transition-transform group-hover/image:scale-105"
                 />
-              </div>
+                <span className="absolute right-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-white shadow-sm">
+                  <ZoomIn size={13} />
+                </span>
+              </button>
               <div className="flex-1 pt-1 pr-6">
                 {displayOriginalPrice && (
                   <div className="text-xs text-gray-400 line-through">
@@ -440,24 +470,29 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
             <div className="flex items-center justify-between pt-4 border-t border-gray-100">
               <span className="text-[13px] font-medium text-gray-800">Jumlah</span>
-              <div className="flex items-center border border-gray-200 rounded-sm">
-                <button 
-                  onClick={handleDecrease}
-                  disabled={!selectedProduct || quantity <= minOrder}
-                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                >
-                  <Minus size={14} />
-                </button>
-                <div className="w-12 h-8 flex items-center justify-center border-l border-r border-gray-200 text-sm font-medium">
-                  {quantity.toLocaleString("id-ID")}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center border border-gray-200 rounded-sm">
+                  <button
+                    onClick={handleDecrease}
+                    disabled={!selectedProduct || quantity <= minOrder}
+                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <div className="w-12 h-8 flex items-center justify-center border-l border-r border-gray-200 text-sm font-medium">
+                    {quantity.toLocaleString("id-ID")}
+                  </div>
+                  <button
+                    onClick={handleIncrease}
+                    disabled={!selectedProduct || (quantity + orderStep) > maxStock}
+                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
-                <button 
-                  onClick={handleIncrease}
-                  disabled={!selectedProduct || (quantity + orderStep) > maxStock}
-                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                >
-                  <Plus size={14} />
-                </button>
+                <span className="inline-flex h-8 items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs font-semibold text-gray-700">
+                  {group.unitName || "Pcs"}
+                </span>
               </div>
             </div>
           </div>
@@ -472,6 +507,37 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
           </div>
         </SheetContent>
       </Sheet>
+
+      {isImagePreviewOpen && createPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Preview gambar produk"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+          onClick={() => setIsImagePreviewOpen(false)}
+        >
+          <button
+            type="button"
+            autoFocus
+            onClick={() => setIsImagePreviewOpen(false)}
+            aria-label="Tutup preview gambar"
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-gray-900 shadow-lg transition-transform active:scale-95"
+          >
+            <X size={22} />
+          </button>
+          <div
+            className="flex max-h-[85vh] w-full max-w-3xl items-center justify-center"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <img
+              src={currentProductImage}
+              alt={selectedProduct?.name || group.name}
+              className="max-h-[85vh] max-w-full object-contain"
+            />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { User, Settings as SettingsIcon, Save, LogOut, Briefcase, MapPin, X, Edi
 import { api } from "@/services/api";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
 import { notifyCustomerAuthChanged } from "@/lib/customer-auth-events";
+import { clearCustomerSession } from "@/lib/customer-session";
 import type { Address } from "@/types";
 
 const profileSchema = z.object({
@@ -239,7 +240,7 @@ export default function SettingsPage() {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem("customer_token");
+      clearCustomerSession();
       notifyCustomerAuthChanged();
       router.push("/login");
       router.refresh();

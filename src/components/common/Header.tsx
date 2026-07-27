@@ -20,6 +20,7 @@ import {
 import MobileNav from "./MobileNav";
 import { api } from "@/services/api";
 import { notifyCustomerAuthChanged } from "@/lib/customer-auth-events";
+import { clearCustomerSession } from "@/lib/customer-session";
 
 export default function Header() {
   const [isMounted, setIsMounted] = useState(false);
@@ -41,7 +42,7 @@ export default function Header() {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem("customer_token");
+      clearCustomerSession();
       notifyCustomerAuthChanged();
       router.push("/login");
       router.refresh();

@@ -440,16 +440,13 @@ export default function CheckoutPage() {
             <div className="bg-white border-b sm:border sm:rounded-md border-gray-200 px-3 py-3 space-y-2 lg:hidden">
                <div className="flex justify-between">
                  <span className="text-sm text-gray-600">Subtotal untuk Produk</span>
-                 <span className="text-sm text-green-600">Rp {subtotal.toLocaleString('id-ID')}</span>
+                 <span className="text-sm font-medium text-blue-600">Rp {subtotal.toLocaleString('id-ID')}</span>
                </div>
-               <div className="flex justify-between">
-                 <span className="text-sm text-gray-600">Total Ongkos Kirim</span>
-                 <span className="text-sm text-gray-900">Via WhatsApp</span>
-               </div>
+
                {discountAmount > 0 && (
                  <div className="flex justify-between">
-                   <span className="text-sm text-green-600">Diskon</span>
-                   <span className="text-sm font-medium text-green-600">- Rp {discountAmount.toLocaleString('id-ID')}</span>
+                   <span className="text-sm text-gray-600">Diskon</span>
+                   <span className="text-sm font-medium text-red-600">- Rp {discountAmount.toLocaleString('id-ID')}</span>
                  </div>
                )}
                <div className="flex justify-between pt-2 border-t border-gray-100">
@@ -467,18 +464,15 @@ export default function CheckoutPage() {
                  <ShoppingBag size={16} className="text-primary" />
                  Ringkasan Pesanan
                </h2>
-               <div className="flex justify-between">
-                 <span className="text-sm text-gray-600">Subtotal Produk</span>
-                 <span className="text-sm text-green-600">Rp {subtotal.toLocaleString('id-ID')}</span>
-               </div>
                <div className="flex justify-between pb-3 border-b border-gray-100">
-                 <span className="text-sm text-gray-600">Ongkos Kirim</span>
-                 <span className="text-sm text-gray-900">Via WhatsApp</span>
+                 <span className="text-sm text-gray-600">Subtotal Produk</span>
+                 <span className="text-sm font-medium text-blue-600">Rp {subtotal.toLocaleString('id-ID')}</span>
                </div>
+
                {discountAmount > 0 && (
                  <div className="flex justify-between pb-3 border-b border-gray-100">
-                   <span className="text-sm text-green-600">Diskon Promo</span>
-                   <span className="text-sm font-medium text-green-600">- Rp {discountAmount.toLocaleString('id-ID')}</span>
+                   <span className="text-sm text-gray-600">Diskon Promo</span>
+                   <span className="text-sm font-medium text-red-600">- Rp {discountAmount.toLocaleString('id-ID')}</span>
                  </div>
                )}
                <div className="flex justify-between pb-3">
@@ -488,7 +482,7 @@ export default function CheckoutPage() {
                <button
                   onClick={handleCheckout}
                   disabled={!isReadyToCheckout}
-                  className="w-full h-10 px-5 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="w-full h-11 px-6 bg-primary text-white text-[15px] font-semibold rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <MessageCircle size={16} />
                   Checkout via WhatsApp
@@ -500,8 +494,8 @@ export default function CheckoutPage() {
       </div>
 
       {/* 5. FIXED BOTTOM BAR (Mobile) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-2px_10px_rgba(0,0,0,0.05)] px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+8px)] flex items-center justify-end gap-3 h-[60px]">
-        <div className="flex flex-col items-end flex-1">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-[0_-2px_10px_rgba(0,0,0,0.05)] px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+8px)] flex items-center justify-between gap-3 h-[60px]">
+        <div className="flex flex-col items-start justify-center flex-1 min-w-0">
           <span className="text-[13px] text-gray-900">Total Pembayaran</span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-base font-bold text-green-600 leading-tight">Rp {totalPayment.toLocaleString('id-ID')}</span>
@@ -515,7 +509,7 @@ export default function CheckoutPage() {
         <button
           onClick={handleCheckout}
           disabled={!isReadyToCheckout}
-          className="h-10 px-5 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 w-auto shrink-0"
+          className="h-11 px-6 bg-primary text-white text-[15px] font-semibold rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 w-auto shrink-0"
         >
           <MessageCircle size={16} />
           Buat Pesanan

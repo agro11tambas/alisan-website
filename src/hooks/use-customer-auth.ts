@@ -3,6 +3,7 @@ import { useState } from "react";
 import { LoginPayload, LoginResponse } from "@/types/auth-type";
 import api from "@/services/api";
 import { notifyCustomerAuthChanged } from "@/lib/customer-auth-events";
+import { saveCustomerSession } from "@/lib/customer-session";
 
 export function useCustomerLogin() {
   const [loading, setLoading] = useState(false);
@@ -16,9 +17,8 @@ export function useCustomerLogin() {
         payload,
       );
 
-      const token = res.data.data.token;
-
-      localStorage.setItem("customer_token", token);
+      const { token, customer, user } = res.data.data;
+      saveCustomerSession(token, customer ?? user);
       notifyCustomerAuthChanged();
 
       return res.data;

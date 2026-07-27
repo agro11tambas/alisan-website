@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/common/Header";
@@ -22,13 +22,18 @@ export const metadata: Metadata = {
   description: "",
 };
 
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#ffffff",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="light" style={{ colorScheme: "light" }}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen flex flex-col bg-gray-50/50`}
       >

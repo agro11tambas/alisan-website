@@ -43,6 +43,7 @@ export default function FloatingWhatsAppButton({ initialPhoneNumber = "628123456
   const bottomClass = hasBottomBar
     ? "bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-6"
     : "bottom-6 md:bottom-6";
+  const hideWhatsApp = pathname === "/cart" || pathname === "/checkout";
 
   return (
     <>
@@ -67,7 +68,7 @@ export default function FloatingWhatsAppButton({ initialPhoneNumber = "628123456
 
       {/* Floating WhatsApp - Bottom Right */}
       <div
-        className={`fixed right-4 md:right-6 z-[90] transition-all duration-300 pointer-events-none ${bottomClass}`}
+        className={hideWhatsApp ? "hidden" : `fixed right-4 md:right-6 z-[90] transition-all duration-300 pointer-events-none ${bottomClass}`}
       >
         <Link
           href={whatsappUrl}

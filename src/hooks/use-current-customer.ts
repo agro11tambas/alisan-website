@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import api from "@/services/api";
 import { CUSTOMER_AUTH_CHANGED_EVENT } from "@/lib/customer-auth-events";
-
+import {
+  cacheCustomer,
+  getCachedCustomer,
+  getCustomerToken,
+} from "@/lib/customer-session";
 import { Customer } from "@/types";
 
 type MeResponse = {
@@ -12,11 +16,13 @@ type MeResponse = {
 
 export function useCurrentCustomer() {
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [hasToken, setHasToken] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchCustomer = useCallback(async () => {
     setLoading(true);
-    const token = localStorage.getItem("customer_token");
+    const token = getCustomerToken();
+    setHasToken(!!token);
 
     if (!token) {
       setCustomer(null);
@@ -24,12 +30,18 @@ export function useCurrentCustomer() {
       return;
     }
 
+    const cachedCustomer = getCachedCustomer();
+    if (cachedCustomer) setCustomer(cachedCustomer);
+
     try {
       const res = await api.get<MeResponse>("/ecommerce/auth/me");
       setCustomer(res.data.data);
-    } catch {
-      localStorage.removeItem("customer_token");
-      setCustomer(null);
+      cacheCustomer(res.data.data);
+    } catch (error) {
+      // A temporary network/API failure must not destroy a valid login session.
+      // Keep both the bearer token and the last known customer profile.
+      console.error("Gagal memperbarui sesi customer:", error);
+      setCustomer((currentCustomer) => currentCustomer ?? cachedCustomer);
     } finally {
       setLoading(false);
     }
@@ -62,7 +74,7 @@ export function useCurrentCustomer() {
   return {
     customer,
     loading,
-    isLoggedIn: !!customer,
+    isLoggedIn: hasToken,
     refreshCustomer: fetchCustomer,
   };
 }
