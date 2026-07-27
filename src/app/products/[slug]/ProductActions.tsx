@@ -429,7 +429,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                       key={p.id}
                       onClick={() => !isOutOfStock && handleSelect(p)}
                       disabled={isOutOfStock}
-                      className={`min-h-[36px] w-full min-w-0 py-1 px-2 flex items-center gap-2 text-[13px] font-medium rounded-sm border transition-all duration-200 ${
+                      className={`min-h-[36px] w-full min-w-0 py-1 px-2 flex items-center gap-2 text-left text-[13px] leading-tight font-medium rounded-sm border transition-all duration-200 ${
                         isSelected 
                           ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
                           : isOutOfStock
@@ -453,7 +453,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                   {allowWithoutLid && (
                   <button
                     onClick={() => handleSelectLid(null)}
-                    className={`min-h-[36px] w-full min-w-0 py-1 px-2 text-[13px] font-medium rounded-sm border transition-all duration-200 ${
+                    className={`min-h-[36px] w-full min-w-0 py-1 px-2 text-left text-[13px] leading-tight font-medium rounded-sm border transition-all duration-200 ${
                       selectedLid === null 
                         ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
                         : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
@@ -470,7 +470,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                         key={lid.id}
                         onClick={() => !isOutOfStock && handleSelectLid(lid)}
                         disabled={isOutOfStock}
-                        className={`min-h-[36px] w-full min-w-0 py-1 px-2 flex items-center gap-2 text-[13px] font-medium rounded-sm border transition-all duration-200 ${
+                        className={`min-h-[36px] w-full min-w-0 py-1 px-2 flex items-center gap-2 text-left text-[13px] leading-tight font-medium rounded-sm border transition-all duration-200 ${
                           isSelected 
                             ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
                             : isOutOfStock
