@@ -7,13 +7,14 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ShoppingBag, ChevronRight, MessageCircle, MapPin, Briefcase, User, Edit2 } from "lucide-react";
+import { ShoppingBag, ChevronRight, MessageCircle, MapPin, Briefcase, User, Edit2, ZoomIn } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { informationService } from "@/services/informationService";
 import { orderService } from "@/services/orderService";
 import { Discount, getActiveDiscounts } from "@/services/discountService";
 import { calculateDiscountAmount, calculateItemDiscounts } from "@/utils/discountUtils";
+import ProductImagePreview from "@/components/common/ProductImagePreview";
 
 const guestSchema = z.object({
   businessName: z.string().optional(),
@@ -27,6 +28,7 @@ type GuestFormValues = z.infer<typeof guestSchema>;
 export default function CheckoutPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   
   const cart = useCartStore();
   const selectedItems = cart.items.filter(i => i.isSelected !== false);
@@ -398,11 +400,27 @@ export default function CheckoutPage() {
 
                  return (
                    <div key={item.id} className="flex gap-3 px-3 py-3 border-b border-gray-50 last:border-0">
-                      <div className="relative w-16 h-16 rounded-sm overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
+                      <button
+                        type="button"
+                        onClick={() => item.image && setPreviewImage({ src: item.image, alt: item.displayName })}
+                        disabled={!item.image}
+                        aria-label={`Perbesar gambar ${item.displayName}`}
+                        className="group/image relative w-16 h-16 rounded-sm overflow-hidden shrink-0 border border-gray-100 bg-gray-50 cursor-zoom-in disabled:cursor-default"
+                      >
                         {item.image && (
-                          <Image src={item.image} alt={item.displayName} fill className="object-cover" />
+                          <>
+                            <Image
+                              src={item.image}
+                              alt={item.displayName}
+                              fill
+                              className="object-cover transition-transform group-hover/image:scale-105"
+                            />
+                            <span className="absolute right-1 bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/65 text-white shadow-sm">
+                              <ZoomIn size={12} />
+                            </span>
+                          </>
                         )}
-                      </div>
+                      </button>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-base font-bold text-gray-900 line-clamp-2 leading-tight">{item.groupName}</h4>
                         <div className="text-sm text-gray-600 mt-1">
@@ -515,6 +533,14 @@ export default function CheckoutPage() {
           Buat Pesanan
         </button>
       </div>
+
+      {previewImage && (
+        <ProductImagePreview
+          image={previewImage.src}
+          alt={previewImage.alt}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
     </div>
   );
 }

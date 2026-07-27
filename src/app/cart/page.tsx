@@ -3,14 +3,16 @@
 import { useCartStore } from "@/stores/useCartStore";
 import Image from "next/image";
 import Link from "next/link";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ZoomIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Discount, getActiveDiscounts } from "@/services/discountService";
 import { calculateDiscountAmount, calculateItemDiscounts } from "@/utils/discountUtils";
+import ProductImagePreview from "@/components/common/ProductImagePreview";
 
 export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const cart = useCartStore();
   const selectedItems = cart.items.filter(i => i.isSelected !== false);
   const itemDiscounts = calculateItemDiscounts(selectedItems, discounts);
@@ -84,16 +86,27 @@ export default function CartPage() {
                       </div>
                       
                       {/* Image */}
-                      <div className="relative w-20 h-20 rounded-sm overflow-hidden bg-gray-50 shrink-0 border border-gray-100">
+                      <button
+                        type="button"
+                        onClick={() => item.image && setPreviewImage({ src: item.image, alt: item.displayName })}
+                        disabled={!item.image}
+                        aria-label={`Perbesar gambar ${item.displayName}`}
+                        className="group/image relative w-20 h-20 rounded-sm overflow-hidden bg-gray-50 shrink-0 border border-gray-100 cursor-zoom-in disabled:cursor-default"
+                      >
                         {item.image && (
-                          <Image
-                            src={item.image}
-                            alt={item.displayName}
-                            fill
-                            className="object-cover"
-                          />
+                          <>
+                            <Image
+                              src={item.image}
+                              alt={item.displayName}
+                              fill
+                              className="object-cover transition-transform group-hover/image:scale-105"
+                            />
+                            <span className="absolute right-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-white shadow-sm">
+                              <ZoomIn size={14} />
+                            </span>
+                          </>
                         )}
-                      </div>
+                      </button>
                       
                       {/* Product Info */}
                       <div className="flex flex-col flex-1 min-w-0 pr-8">
@@ -246,6 +259,14 @@ export default function CartPage() {
             </Link>
           </div>
         </div>
+      )}
+
+      {previewImage && (
+        <ProductImagePreview
+          image={previewImage.src}
+          alt={previewImage.alt}
+          onClose={() => setPreviewImage(null)}
+        />
       )}
 
     </div>
