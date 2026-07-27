@@ -63,9 +63,9 @@ export default function FeaturedProductCarousel({
         onClick={() => emblaApi?.scrollPrev()}
         disabled={!canScrollPrev}
         aria-label="Geser featured product ke kiri"
-        className="absolute left-1 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-md transition hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-0 md:flex"
+        className="absolute left-1 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200/80 bg-white/85 text-gray-600 shadow-sm backdrop-blur-sm transition hover:border-primary/60 hover:text-primary disabled:pointer-events-none disabled:opacity-30 md:h-9 md:w-9"
       >
-        <ChevronLeft size={22} />
+        <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
       </button>
 
       <button
@@ -73,9 +73,9 @@ export default function FeaturedProductCarousel({
         onClick={() => emblaApi?.scrollNext()}
         disabled={!canScrollNext}
         aria-label="Geser featured product ke kanan"
-        className="absolute right-1 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-md transition hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-0 md:flex"
+        className="absolute right-1 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200/80 bg-white/85 text-gray-600 shadow-sm backdrop-blur-sm transition hover:border-primary/60 hover:text-primary disabled:pointer-events-none disabled:opacity-30 md:h-9 md:w-9"
       >
-        <ChevronRight size={22} />
+        <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
       </button>
     </div>
   );

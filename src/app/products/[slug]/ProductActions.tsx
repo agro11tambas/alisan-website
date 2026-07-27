@@ -376,7 +376,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent
           side="bottom"
-          className="data-[side=bottom]:h-[85dvh] data-[side=bottom]:max-h-[calc(100dvh-env(safe-area-inset-top))] gap-0 overflow-hidden rounded-t-2xl border-none px-0 pb-0 pt-3 md:hidden z-[100]"
+          className="data-[side=bottom]:h-[78dvh] data-[side=bottom]:max-h-[calc(100dvh-env(safe-area-inset-top))] gap-0 overflow-hidden rounded-t-2xl border-none px-0 pb-0 pt-3 md:hidden z-[100]"
         >
           <SheetHeader className="px-4 pb-3 text-left border-b border-gray-100 shrink-0 relative">
             <div className="flex items-start gap-4">
@@ -417,10 +417,10 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             <SheetTitle className="sr-only">Pilih Varian</SheetTitle>
           </SheetHeader>
           
-          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 py-4 space-y-6">
+          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-3 py-4 space-y-6">
             <div>
               <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">{group.productGroupName || "Varian Cup"}</h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {group.products.map((p) => {
                   const isSelected = selectedProduct?.id === p.id;
                   const isOutOfStock = p.stock === 0;
@@ -429,7 +429,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                       key={p.id}
                       onClick={() => !isOutOfStock && handleSelect(p)}
                       disabled={isOutOfStock}
-                      className={`min-h-[36px] py-1 px-3 flex items-center gap-2 text-[13px] font-medium rounded-sm border shrink-0 transition-all duration-200 ${
+                      className={`min-h-[36px] w-full min-w-0 py-1 px-2 flex items-center gap-2 text-[13px] font-medium rounded-sm border transition-all duration-200 ${
                         isSelected 
                           ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
                           : isOutOfStock
@@ -449,11 +449,11 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
               <div>
                 <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">{group.lidGroupName || "Varian Tutup"}</h3>
                 {lidSelectionRequired && <p className="mb-2 text-xs font-semibold text-red-600">Wajib pilih tutup</p>}
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {allowWithoutLid && (
                   <button
                     onClick={() => handleSelectLid(null)}
-                    className={`min-h-[36px] py-1 px-3 text-[13px] font-medium rounded-sm border shrink-0 transition-all duration-200 ${
+                    className={`min-h-[36px] w-full min-w-0 py-1 px-2 text-[13px] font-medium rounded-sm border transition-all duration-200 ${
                       selectedLid === null 
                         ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
                         : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
@@ -470,7 +470,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                         key={lid.id}
                         onClick={() => !isOutOfStock && handleSelectLid(lid)}
                         disabled={isOutOfStock}
-                        className={`min-h-[36px] py-1 px-3 flex items-center gap-2 text-[13px] font-medium rounded-sm border shrink-0 transition-all duration-200 ${
+                        className={`min-h-[36px] w-full min-w-0 py-1 px-2 flex items-center gap-2 text-[13px] font-medium rounded-sm border transition-all duration-200 ${
                           isSelected 
                             ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
                             : isOutOfStock
