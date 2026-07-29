@@ -17,34 +17,15 @@ export default async function Home() {
       {/* Hero Banner Area */}
       <section className="bg-white pt-1 pb-1.5 md:pt-2 md:pb-6">
         <div className="w-full px-2 sm:container sm:mx-auto sm:px-4">
-          <div className="relative rounded-lg md:rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[21/9] md:aspect-[3/1] bg-gray-900 shadow-sm border border-gray-100">
+          <div className="relative overflow-hidden rounded-lg border border-gray-100 shadow-sm aspect-[1672/941] md:rounded-2xl">
             <Image
-              src="/images/home-banner.png"
-              alt="Promo Banner"
+              src="/images/banner-true.png"
+              alt="Banner promosi Alisan"
               fill
-              className="object-cover opacity-60"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 100vw"
+              className="object-cover"
+              sizes="(max-width: 640px) calc(100vw - 1rem), (max-width: 1280px) calc(100vw - 2rem), 1280px"
               priority
             />
-            <div className="absolute inset-0 flex items-center">
-              <div className="px-4 md:px-12 max-w-2xl text-white">
-                <span className="inline-block py-0.5 px-2 md:py-1 md:px-3 rounded-full bg-primary/20 backdrop-blur-md border border-primary/30 text-primary-foreground text-[10px] md:text-xs font-bold mb-2 md:mb-4 shadow-sm">
-                  SABLON CUP PREMIUM
-                </span>
-                <h1 className="text-xl sm:text-3xl md:text-5xl font-bold mb-2 md:mb-4 tracking-tight drop-shadow-md leading-tight">
-                  Tingkatkan Nilai Brand Minuman Anda bersama Alisan
-                </h1>
-                <p className="text-xs sm:text-sm md:text-lg mb-4 md:mb-6 text-gray-200 drop-shadow max-w-[90%]">
-                  Kami menyediakan jasa sablon cup plastik berkualitas tinggi dengan hasil tajam dan awet. Solusi terbaik untuk kemasan bisnis minuman kekinian Anda.
-                </p>
-                <Link
-                  href="/products"
-                  className="inline-flex h-8 px-4 text-xs md:h-12 md:px-6 md:text-sm items-center justify-center rounded-md bg-primary font-medium text-primary-foreground transition-all hover:bg-primary/90 hover:scale-105 hover:shadow-lg active:scale-95"
-                >
-                  Lihat Produk
-                </Link>
-              </div>
-            </div>
           </div>
         </div>
       </section>
