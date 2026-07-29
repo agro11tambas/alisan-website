@@ -1,0 +1,11 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 64 64"
+  role="img"
+  aria-label="Alisan"
+>
+  <path
+    fill="#2563EB"
+    d="M32 4 6 60h13l13-31 13 31h13L32 4Zm-9 35-5 11h28l-5-11H23Z"
+  />
+</svg>
