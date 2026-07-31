@@ -13,11 +13,17 @@ export default async function ProductsPage({
   const categorySlug = typeof params.category === 'string' ? params.category : undefined;
   const search = typeof params.search === 'string' ? params.search : undefined;
 
-  const categories = await categoryService.getCategories();
+  const [categories, unfilteredGroups] = await Promise.all([
+    categoryService.getCategories(),
+    productService.getProductGroups({ search }),
+  ]);
   const currentCategory = categorySlug ? categories.find(c => c.slug === categorySlug) : undefined;
   const categoryId = currentCategory ? currentCategory.id : undefined;
-
-  const groups = await productService.getProductGroups({ categoryId, search });
+  const groups = categoryId
+    ? unfilteredGroups.filter((product) =>
+        product.category === categoryId || product.categories?.includes(categoryId),
+      )
+    : unfilteredGroups;
 
   return (
     <div className="bg-gray-50 min-h-screen pb-6 md:pb-8">

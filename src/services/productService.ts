@@ -1,5 +1,6 @@
 import { api } from "./api";
 import { ProductGroup, AddOnProduct, Product } from "@/types";
+import { cache } from "react";
 
 const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
   return apiData.map((ecProduct: any) => {
@@ -90,7 +91,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
   });
 };
 
-const fetchAllProductGroups = async (): Promise<ProductGroup[]> => {
+const fetchAllProductGroups = cache(async (): Promise<ProductGroup[]> => {
   try {
     const response = await api.get("/ecommerce/products");
     if (response.data?.success && response.data?.data) {
@@ -101,7 +102,23 @@ const fetchAllProductGroups = async (): Promise<ProductGroup[]> => {
     console.error("Error fetching products:", error);
     return [];
   }
-};
+});
+
+const fetchProductGroupBySlug = cache(
+  async (slug: string): Promise<ProductGroup | undefined> => {
+    try {
+      const response = await api.get(`/ecommerce/products/${slug}`);
+      if (response.data?.success && response.data?.data) {
+        const mapped = mapBackendToFrontend([response.data.data]);
+        return mapped[0];
+      }
+      return undefined;
+    } catch (error) {
+      console.error("Error fetching product by slug:", error);
+      return undefined;
+    }
+  },
+);
 
 export const productService = {
   getAvailableLids: async (): Promise<AddOnProduct[]> => {
@@ -163,24 +180,15 @@ export const productService = {
   getProductGroupBySlug: async (
     slug: string,
   ): Promise<ProductGroup | undefined> => {
-    try {
-      const response = await api.get(`/ecommerce/products/${slug}`);
-      if (response.data?.success && response.data?.data) {
-        const mapped = mapBackendToFrontend([response.data.data]);
-        return mapped[0];
-      }
-      return undefined;
-    } catch (error) {
-      console.error("Error fetching product by slug:", error);
-      return undefined;
-    }
+    return fetchProductGroupBySlug(slug);
   },
 
   getRelatedProductGroups: async (
     groupId: string,
     limit: number = 4,
+    prefetchedGroups?: ProductGroup[],
   ): Promise<ProductGroup[]> => {
-    const groups = await productService.getProductGroups();
+    const groups = prefetchedGroups ?? await productService.getProductGroups();
     const group = groups.find((p) => p.id === groupId);
     if (!group) return [];
 

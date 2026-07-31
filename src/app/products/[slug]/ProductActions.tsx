@@ -404,7 +404,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                   <ZoomIn size={13} />
                 </span>
               </button>
-              <div className="flex-1 pt-1 pr-6">
+              <div className="min-w-0 flex-1 pt-1 pr-6">
                 {canShowPrice && displayOriginalPrice && (
                   <div className="text-xs text-gray-400 line-through">
                     Rp {displayOriginalPrice.toLocaleString('id-ID')}
@@ -423,7 +423,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                   Stok: {selectedProduct ? maxStock : group.products.reduce((acc, p) => acc + p.stock, 0)}
                 </div>
                 {selectedProduct && (
-                  <div className="text-[13px] text-gray-800 line-clamp-1">
+                  <div className="text-[13px] leading-snug text-gray-800 whitespace-normal break-words">
                     Varian: {selectedProduct.name} {selectedLid ? `+ ${selectedLid.name}` : ''}
                   </div>
                 )}

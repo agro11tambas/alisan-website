@@ -18,8 +18,33 @@ const fetchInformation = async (): Promise<Information | null> => {
   }
 };
 
+let cachedInformation: Information | undefined;
+let informationRequest: Promise<Information | null> | null = null;
+
 export const informationService = {
   getInformation: async (): Promise<Information | null> => {
-    return fetchInformation();
+    if (cachedInformation) {
+      return cachedInformation;
+    }
+
+    if (informationRequest) {
+      return informationRequest;
+    }
+
+    informationRequest = (async () => {
+      try {
+        const information = await fetchInformation();
+
+        if (information) {
+          cachedInformation = information;
+        }
+
+        return information;
+      } finally {
+        informationRequest = null;
+      }
+    })();
+
+    return informationRequest;
   },
 };

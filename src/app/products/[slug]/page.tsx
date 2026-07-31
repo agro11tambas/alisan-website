@@ -11,13 +11,16 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>
 }) {
   const resolvedParams = await params;
-  const group = await productService.getProductGroupBySlug(resolvedParams.slug);
+  const [group, groups] = await Promise.all([
+    productService.getProductGroupBySlug(resolvedParams.slug),
+    productService.getProductGroups(),
+  ]);
   
   if (!group) {
     notFound();
   }
 
-  const relatedGroups = await productService.getRelatedProductGroups(group.id, 5);
+  const relatedGroups = await productService.getRelatedProductGroups(group.id, 5, groups);
 
   return (
     <div className="bg-gray-100 min-h-screen pb-8">
