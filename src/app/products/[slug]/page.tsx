@@ -2,7 +2,6 @@ import { productService } from "@/services/productService";
 import { notFound } from "next/navigation";
 import ProductDetailClient from "./ProductDetailClient";
 import ProductMobileHeader from "./ProductMobileHeader";
-import ProductCard from "@/components/product/ProductCard";
 import Link from "next/link";
 
 export default async function ProductDetailPage({
@@ -11,19 +10,14 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>
 }) {
   const resolvedParams = await params;
-  const [group, groups] = await Promise.all([
-    productService.getProductGroupBySlug(resolvedParams.slug),
-    productService.getProductGroups(),
-  ]);
+  const group = await productService.getProductGroupBySlug(resolvedParams.slug);
   
   if (!group) {
     notFound();
   }
 
-  const relatedGroups = await productService.getRelatedProductGroups(group.id, 5, groups);
-
   return (
-    <div className="bg-gray-100 min-h-screen pb-8">
+    <div className="bg-gray-100 min-h-screen pb-24 md:pb-8">
       <ProductMobileHeader />
       
       <div className="hidden md:block bg-white border-b border-border shadow-sm">
@@ -43,15 +37,14 @@ export default async function ProductDetailPage({
           <ProductDetailClient group={group} />
         </div>
 
-        {/* Related Products */}
-        {relatedGroups.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 tracking-tight">Mungkin Anda Suka</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-              {relatedGroups.map(rg => (
-                <ProductCard key={rg.id} group={rg} />
-              ))}
-            </div>
+        {group.description?.trim() && (
+          <div className="mt-1.5 bg-white px-3 py-4 sm:mt-4 sm:rounded-xl sm:border sm:border-gray-100 sm:p-6 sm:shadow-sm">
+            <h2 className="mb-3 text-lg font-bold tracking-tight text-gray-900">
+              Deskripsi Produk
+            </h2>
+            <p className="whitespace-pre-line text-sm leading-6 text-gray-600">
+              {group.description}
+            </p>
           </div>
         )}
       </div>

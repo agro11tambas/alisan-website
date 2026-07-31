@@ -201,7 +201,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     || "/image/Placeholder.jpg";
     
   return (
-    <div className="mt-2 pb-20 md:pb-0">
+    <div className="mt-2">
       
       {/* Price Display */}
       <div className="mb-3 px-3 md:px-0">
