@@ -1,5 +1,77 @@
 "use client";
 
+import Link from "next/link";
+import { MessageCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { informationService } from "@/services/informationService";
+
+const DEFAULT_ADMIN_NUMBER = "6281234567890";
+
+export default function RegisterPage() {
+  const [adminNumber, setAdminNumber] = useState(DEFAULT_ADMIN_NUMBER);
+
+  useEffect(() => {
+    informationService.getInformation().then((info) => {
+      if (!info?.phone_number) return;
+
+      let phoneNumber = info.phone_number.replace(/\D/g, "");
+      if (phoneNumber.startsWith("0")) {
+        phoneNumber = `62${phoneNumber.slice(1)}`;
+      }
+
+      setAdminNumber(phoneNumber);
+    });
+  }, []);
+
+  const message = encodeURIComponent(
+    "Halo Admin Alisan, saya ingin mendaftar akun.",
+  );
+  const whatsappUrl = `https://wa.me/${adminNumber}?text=${message}`;
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4">
+      <div className="w-full max-w-md overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+        <div className="p-6 text-center md:p-8">
+          <div className="mb-5 flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366]/10 text-[#25D366]">
+              <MessageCircle size={30} aria-hidden="true" />
+            </div>
+          </div>
+
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Daftar Akun
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-gray-500">
+            Untuk melakukan pendaftaran akun, silakan hubungi admin Alisan
+            melalui WhatsApp.
+          </p>
+
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-[#25D366] text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#20bd5a]"
+          >
+            <MessageCircle size={19} aria-hidden="true" />
+            Hubungi Admin via WhatsApp
+          </a>
+
+          <div className="mt-6 text-sm text-gray-600">
+            Sudah punya akun?{" "}
+            <Link href="/login" className="font-bold text-primary hover:underline">
+              Masuk
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/*
+ * Form pendaftaran lama dinonaktifkan sementara.
+ * Kode dipertahankan agar dapat diaktifkan kembali bila diperlukan.
+ *
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema, RegisterFormValues } from "@/validations";
@@ -137,3 +209,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+*/
