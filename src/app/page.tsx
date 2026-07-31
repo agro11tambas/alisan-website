@@ -76,7 +76,7 @@ export default async function Home() {
             </div>
             <Link
               href="/products"
-              className="text-[10px] md:text-sm font-medium text-primary hover:underline underline-offset-4"
+              className="inline-flex h-8 items-center justify-center rounded-full bg-green-600 px-3 text-xs font-semibold text-white shadow-sm transition-all hover:bg-green-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 active:scale-95 md:h-10 md:px-5 md:text-sm"
             >
               Lihat Semua
             </Link>
