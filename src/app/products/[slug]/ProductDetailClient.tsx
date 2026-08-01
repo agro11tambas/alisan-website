@@ -14,12 +14,17 @@ export default function ProductDetailClient({ group }: { group: ProductGroup }) 
   const [galleryImages, setGalleryImages] = useState<string[]>(defaultGallery);
 
   const handleImageChange = useCallback((image: string, gallery?: string[]) => {
-    setActiveImage(image);
-    if (gallery && gallery.length > 0) {
-      setGalleryImages(gallery);
-    } else {
-      setGalleryImages([image]);
+    const nextGallery = (gallery || []).filter(Boolean);
+
+    // Combination images from ERP are not necessarily part of the product's
+    // regular gallery. Include the selected image so the desktop carousel can
+    // actually render and scroll to it.
+    if (!nextGallery.includes(image)) {
+      nextGallery.unshift(image);
     }
+
+    setActiveImage(image);
+    setGalleryImages(nextGallery.length > 0 ? nextGallery : [image]);
   }, []);
 
   return (
