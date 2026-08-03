@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { productService } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
 import FeaturedProductCarousel from "@/components/product/FeaturedProductCarousel";
@@ -31,29 +32,39 @@ export default async function Home() {
       </section>
 
       {/* Categories */}
-      <section className="py-1.5 md:py-6 bg-white">
+      <section className="bg-white py-5 md:py-10">
         <div className="w-full px-2 sm:container sm:mx-auto sm:px-4">
-          <div className="flex items-center justify-between mb-1.5 md:mb-4">
-            <h2 className="text-lg md:text-xl font-bold text-gray-900 tracking-tight">
-              Kategori Produk
-            </h2>
+          <div className="mb-4 flex items-end justify-between gap-4 md:mb-6">
+            <div>
+              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary md:text-xs">
+                Jelajahi koleksi
+              </p>
+              <h2 className="text-xl font-bold tracking-tight text-gray-950 md:text-3xl">
+                Kategori Produk
+              </h2>
+            </div>
+            <p className="hidden max-w-xs text-right text-sm leading-6 text-gray-500 md:block">
+              Temukan kebutuhan bisnis Anda berdasarkan jenis produk.
+            </p>
           </div>
-          <div className="grid grid-cols-4 md:grid-cols-10 gap-1 md:gap-4">
-            {categories.map((category) => (
+
+          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-5 md:gap-3">
+            {categories.map((category, index) => (
               <Link
                 key={category.id}
                 href={`/products?category=${category.slug}`}
-                className="group flex flex-col items-center gap-1 md:gap-3"
+                className="group relative flex min-h-24 flex-col justify-between overflow-hidden rounded-xl border border-gray-200 bg-gray-50/70 p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary hover:shadow-lg hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:min-h-32 md:rounded-2xl md:p-5"
               >
-                <div className="relative w-10 h-10 md:w-20 md:h-20 rounded-full overflow-hidden bg-gray-50 shadow-sm border border-gray-100 group-hover:border-primary transition-colors">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
+                <div className="flex items-start justify-between">
+                  <span className="font-mono text-[10px] font-semibold tracking-widest text-gray-400 transition-colors group-hover:text-white/60 md:text-xs">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="grid size-7 place-items-center rounded-full border border-gray-200 bg-white text-gray-500 transition-all duration-300 group-hover:rotate-45 group-hover:border-white/20 group-hover:bg-white/10 group-hover:text-white md:size-8">
+                    <ArrowUpRight className="size-3.5 md:size-4" aria-hidden="true" />
+                  </span>
                 </div>
-                <span className="text-xs md:text-sm font-medium text-center text-gray-700 group-hover:text-primary transition-colors">
+
+                <span className="max-w-[12rem] text-sm font-bold leading-tight text-gray-900 transition-colors group-hover:text-white md:text-base">
                   {category.name}
                 </span>
               </Link>
