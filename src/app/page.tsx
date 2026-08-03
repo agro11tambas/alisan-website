@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 import { productService } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
 import FeaturedProductCarousel from "@/components/product/FeaturedProductCarousel";
@@ -32,39 +31,39 @@ export default async function Home() {
       </section>
 
       {/* Categories */}
-      <section className="bg-white py-5 md:py-10">
+      <section className="bg-white py-1.5 md:py-6">
         <div className="w-full px-2 sm:container sm:mx-auto sm:px-4">
-          <div className="mb-4 flex items-end justify-between gap-4 md:mb-6">
+          <div className="mb-1.5 flex items-center justify-between gap-3 md:mb-5">
             <div>
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary md:text-xs">
-                Jelajahi koleksi
-              </p>
-              <h2 className="text-xl font-bold tracking-tight text-gray-950 md:text-3xl">
+              <h2 className="text-lg font-bold tracking-tight text-gray-900 md:mb-1 md:text-2xl">
                 Kategori Produk
               </h2>
+              <p className="hidden text-sm text-gray-500 md:block">
+                Pilih kategori sesuai kebutuhan Anda
+              </p>
             </div>
-            <p className="hidden max-w-xs text-right text-sm leading-6 text-gray-500 md:block">
-              Temukan kebutuhan bisnis Anda berdasarkan jenis produk.
-            </p>
+            <Link
+              href="/products"
+              className="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-green-600 px-3 text-[11px] font-semibold text-white shadow-sm transition-all hover:bg-green-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 active:scale-95 md:h-10 md:px-5 md:text-sm"
+            >
+              Lihat Semua Kategori
+            </Link>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-5 md:gap-3">
-            {categories.map((category, index) => (
+          <div className="grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 md:grid-cols-10 md:rounded-xl">
+            {categories.map((category) => (
               <Link
                 key={category.id}
                 href={`/products?category=${category.slug}`}
-                className="group relative flex min-h-24 flex-col justify-between overflow-hidden rounded-xl border border-gray-200 bg-gray-50/70 p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary hover:shadow-lg hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:min-h-32 md:rounded-2xl md:p-5"
+                className="group flex min-h-20 flex-col items-center justify-center gap-1.5 bg-white px-1 py-2 text-center transition-colors hover:bg-blue-50 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary md:min-h-28 md:gap-2.5 md:px-2 md:py-3"
               >
-                <div className="flex items-start justify-between">
-                  <span className="font-mono text-[10px] font-semibold tracking-widest text-gray-400 transition-colors group-hover:text-white/60 md:text-xs">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className="grid size-7 place-items-center rounded-full border border-gray-200 bg-white text-gray-500 transition-all duration-300 group-hover:rotate-45 group-hover:border-white/20 group-hover:bg-white/10 group-hover:text-white md:size-8">
-                    <ArrowUpRight className="size-3.5 md:size-4" aria-hidden="true" />
-                  </span>
-                </div>
-
-                <span className="max-w-[12rem] text-sm font-bold leading-tight text-gray-900 transition-colors group-hover:text-white md:text-base">
+                <span
+                  aria-hidden="true"
+                  className="grid size-8 place-items-center rounded-full bg-blue-50 text-xs font-bold uppercase text-primary transition-colors group-hover:bg-primary group-hover:text-white md:size-12 md:text-base"
+                >
+                  {category.name.trim().charAt(0)}
+                </span>
+                <span className="line-clamp-2 text-[10px] font-medium leading-tight text-gray-700 transition-colors group-hover:text-primary md:text-xs">
                   {category.name}
                 </span>
               </Link>
@@ -89,7 +88,7 @@ export default async function Home() {
               href="/products"
               className="inline-flex h-8 items-center justify-center rounded-full bg-green-600 px-3 text-xs font-semibold text-white shadow-sm transition-all hover:bg-green-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 active:scale-95 md:h-10 md:px-5 md:text-sm"
             >
-              Lihat Semua
+              Lihat Semua Produk
             </Link>
           </div>
 
