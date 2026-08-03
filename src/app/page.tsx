@@ -51,12 +51,12 @@ export default async function Home() {
           </div>
 
           <div className="-mx-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:overflow-visible md:p-0">
-            <div className="flex min-w-full snap-x snap-mandatory gap-1.5 md:grid md:grid-cols-10 md:gap-px md:overflow-hidden md:rounded-xl md:border md:border-gray-200 md:bg-gray-200">
+            <div className="flex min-w-full snap-x snap-mandatory gap-1.5 md:grid md:grid-cols-10">
               {categories.map((category) => (
                 <Link
                   key={category.id}
                   href={`/products?category=${category.slug}`}
-                  className="group flex min-h-20 flex-[0_0_23%] snap-start flex-col items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-1 py-2 text-center transition-colors hover:bg-blue-50 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary md:min-h-28 md:flex-none md:rounded-none md:border-0 md:gap-2.5 md:px-2 md:py-3"
+                  className="group flex min-h-20 flex-[0_0_23%] snap-start flex-col items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-1 py-2 text-center transition-colors hover:bg-blue-50 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary md:min-h-28 md:flex-none md:gap-2.5 md:px-2 md:py-3"
                 >
                   <span
                     aria-hidden="true"
