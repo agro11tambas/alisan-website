@@ -210,8 +210,10 @@ export default function CheckoutPage() {
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
         if (error.response.data.errors) {
-          const details = Object.values(error.response.data.errors).flat().join('\n');
-          errorMessage += '\n' + details;
+          const details = Object.values(error.response.data.errors)
+            .flat()
+            .filter((detail) => detail !== errorMessage);
+          if (details.length > 0) errorMessage += '\n' + details.join('\n');
         }
       }
       alert(errorMessage);

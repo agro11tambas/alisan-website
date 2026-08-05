@@ -5,18 +5,17 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import axios from "axios";
-import { User, Settings as SettingsIcon, Save, LogOut, Briefcase, MapPin, KeyRound, ShieldCheck } from "lucide-react";
+
+import { User, Settings as SettingsIcon, LogOut, Briefcase, MapPin, KeyRound, ShieldCheck } from "lucide-react";
 import { api } from "@/services/api";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
 import { notifyCustomerAuthChanged } from "@/lib/customer-auth-events";
 import { clearCustomerSession } from "@/lib/customer-session";
 
-const profileSchema = z.object({
-  name: z.string().min(2, "Nama minimal 2 karakter"),
-  whatsapp_number: z.string().min(8, "Nomor WhatsApp tidak valid"),
-});
-type ProfileFormValues = z.infer<typeof profileSchema>;
+type ProfileFormValues = {
+  name: string;
+  whatsapp_number: string;
+};
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Password saat ini wajib diisi"),
@@ -33,7 +32,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -42,16 +41,12 @@ export default function SettingsPage() {
   const [expandedBusinessId, setExpandedBusinessId] = useState<number | null>(null);
 
   const router = useRouter();
-  const { customer, refreshCustomer } = useCurrentCustomer();
+  const { customer } = useCurrentCustomer();
 
   const {
     register,
-    handleSubmit,
     reset,
-    formState: { errors },
-  } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
-  });
+  } = useForm<ProfileFormValues>();
 
   const {
     register: registerPassword,
@@ -91,34 +86,6 @@ export default function SettingsPage() {
     };
   }, [reset, router]);
 
-  const onSubmit = async (data: ProfileFormValues) => {
-    setIsSaving(true);
-    try {
-      const response = await api.put("/ecommerce/auth/profile", {
-        name: data.name,
-        whatsapp_number: data.whatsapp_number,
-      });
-
-      if (response.data.success) {
-        alert("Profil berhasil diperbarui!");
-        await refreshCustomer();
-        notifyCustomerAuthChanged();
-      }
-    } catch (error: unknown) {
-      console.error("Failed to update profile:", error);
-      let errorMessage = "Terjadi kesalahan saat menyimpan profil.";
-      if (axios.isAxiosError(error) && error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-        if (error.response.data.errors) {
-          const details = Object.values<string[]>(error.response.data.errors).flat().join("\\n");
-          errorMessage += "\\n" + details;
-        }
-      }
-      alert(errorMessage);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleChangePassword = async (data: PasswordFormValues) => {
     setIsChangingPassword(true);
@@ -235,7 +202,7 @@ export default function SettingsPage() {
             </div>
             
             <div className="p-6">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <div className="space-y-5">
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
@@ -243,14 +210,11 @@ export default function SettingsPage() {
                   </label>
                   <input
                     {...register("name")}
-                    className={`w-full h-11 px-4 text-sm border rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${
-                      errors.name ? "border-red-500" : "border-gray-300"
-                    }`}
+                    disabled
+                    className="w-full h-11 px-4 text-sm border border-gray-200 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed outline-none"
                     placeholder="Masukkan nama lengkap Anda"
                   />
-                  {errors.name && (
-                    <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
-                  )}
+
                 </div>
 
                 <div>
@@ -259,33 +223,20 @@ export default function SettingsPage() {
                   </label>
                   <input
                     {...register("whatsapp_number")}
-                    className={`w-full h-11 px-4 text-sm border rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${
-                      errors.whatsapp_number ? "border-red-500" : "border-gray-300"
-                    }`}
+                    disabled
+                    className="w-full h-11 px-4 text-sm border border-gray-200 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed outline-none"
                     placeholder="Contoh: 081234567890"
                   />
-                  {errors.whatsapp_number && (
-                    <p className="mt-1 text-xs text-red-500">{errors.whatsapp_number.message}</p>
-                  )}
+
                   <p className="mt-1.5 text-xs text-gray-500">
                     Nomor ini akan digunakan sebagai nomor utama untuk komunikasi pesanan dan login.
                   </p>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="w-full h-11 bg-primary text-white font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
-                  >
-                    {isSaving ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ) : (
-                      <>
-                        <Save size={18} /> Simpan Perubahan
-                      </>
-                    )}
-                  </button>
+                  <p className="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-600">
+                    Nama lengkap dan nomor WhatsApp hanya dapat dilihat. Hubungi admin untuk melakukan perubahan.
+                  </p>
                   
                   <button
                     type="button"
@@ -296,7 +247,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
                 
-              </form>
+              </div>
             </div>
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, User, Menu, Settings, LogOut } from "lucide-react";
+import { ShoppingCart, User, Menu, Settings, LogOut, ClipboardList, MapPin } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
 import SearchBar from "./SearchBar";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +119,14 @@ export default function Header() {
                       <span className="text-xs text-gray-500 truncate">{customer?.whatsapp_number || customer?.whatsappNumber}</span>
                     </div>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/account/orders')} className="cursor-pointer">
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      <span>Pesanan Saya</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/account/addresses')} className="cursor-pointer">
+                      <MapPin className="mr-2 h-4 w-4" />
+                      <span>Alamat Saya</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/account')} className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Pengaturan Akun</span>

@@ -131,9 +131,12 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'alisan-cart-storage',
-      version: 6,
+      version: 7,
       migrate: (persistedState: any, version: number) => {
-        if (version !== 6) return { items: [] };
+        if (version !== 7) {
+          const previousItems = Array.isArray(persistedState?.items) ? persistedState.items : [];
+          return { items: previousItems.filter((item: CartItem) => item.type !== 'bundle') };
+        }
         return persistedState;
       },
     },

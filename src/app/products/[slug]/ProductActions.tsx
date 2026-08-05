@@ -530,7 +530,12 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
             {selectedProduct && availableModePrices.length > 0 && (
               <div>
-                <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">Mode</h3>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-[13px] font-medium uppercase text-gray-800">Mode</h3>
+                  {!selectedMode && (
+                    <span className="text-xs font-semibold text-red-600">Wajib pilih mode</span>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {availableModePrices.map((mode) => (
                     <button key={mode.slug} type="button" onClick={() => setSelectedMode(mode)}
@@ -575,7 +580,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             <button 
               onClick={handleAddToCartFromSheet}
               disabled={!selectedProduct || !selectedMode || (lidSelectionRequired && !selectedLid)}
-              className={`w-full h-[44px] rounded flex items-center justify-center font-bold text-[15px] transition-colors ${!selectedProduct || (lidSelectionRequired && !selectedLid) ? 'bg-gray-100 text-gray-400' : 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90'}`}
+              className={`w-full h-[44px] rounded flex items-center justify-center font-bold text-[15px] transition-colors ${!selectedProduct || !selectedMode || (lidSelectionRequired && !selectedLid) ? 'bg-gray-100 text-gray-400' : 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90'}`}
             >
               Masukkan Keranjang
             </button>
