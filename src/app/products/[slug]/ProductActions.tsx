@@ -86,14 +86,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
   const handleSelect = (p: Product) => {
     setSelectedProduct(p);
-    const combination = selectedLid
-      ? (group as any)._combinations?.find((item: any) =>
-          String(item.product_option_id) === String(p.id)
-          && String(item.lid_option_id) === String(selectedLid.id),
-        )
-      : null;
-    const prices: ModePrice[] = combination?.modePrices?.length ? combination.modePrices : (p.modePrices || []);
-    setSelectedMode(prices.find((price) => price.slug === "polosan") || prices[0] || null);
+    setSelectedMode(null);
     setQuantity(p.minimumOrder || 1);
     if (onImageChange) {
       const comboImage = selectedLid ? getCombinationImage(p.id, selectedLid.id) : null;
@@ -106,21 +99,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
   const handleSelectLid = (lid: AddOnProduct | null) => {
     setSelectedLid(lid);
-    const combination = selectedProduct && lid
-      ? (group as any)._combinations?.find((item: any) =>
-          String(item.product_option_id) === String(selectedProduct.id)
-          && String(item.lid_option_id) === String(lid.id),
-        )
-      : null;
-    const prices: ModePrice[] = combination?.modePrices?.length
-      ? combination.modePrices
-      : (selectedProduct?.modePrices || []);
-    setSelectedMode((current) =>
-      prices.find((price) => price.slug === current?.slug)
-      || prices.find((price) => price.slug === "polosan")
-      || prices[0]
-      || null,
-    );
+    setSelectedMode(null);
     if (selectedProduct) {
       const maxLidStock = lid ? lid.stock : Infinity;
       const finalMax = Math.min(selectedProduct.stock, maxLidStock);
@@ -175,7 +154,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     }
 
     if (!selectedMode) {
-      toast.error("Mode belum tersedia untuk varian ini");
+      toast.error("Silakan pilih mode terlebih dahulu");
       return false;
     }
 
