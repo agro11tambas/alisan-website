@@ -1,10 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CartItem, Product, ProductGroup, AddOnProduct } from '@/types';
+import { CartItem, Product, ProductGroup, AddOnProduct, ModePrice } from '@/types';
 
 interface CartState {
   items: CartItem[];
-  addItem: (group: ProductGroup, product: Product, quantity: number, addOn?: AddOnProduct) => void;
+  addItem: (
+    group: ProductGroup,
+    product: Product,
+    quantity: number,
+    mode: ModePrice,
+    unitPrice: number,
+    addOn?: AddOnProduct,
+  ) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
   toggleSelection: (cartItemId: string) => void;
@@ -20,137 +27,116 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      
-      addItem: (group, product, quantity, addOn) => {
-        const cartItemId = addOn 
-          ? `bundle-${product.id}-${addOn.id}` 
-          : `single-${product.id}`;
-        
+
+      addItem: (group, product, quantity, mode, unitPrice, addOn) => {
+        const cartItemId = addOn
+          ? `bundle-${product.id}-${addOn.id}-${mode.slug}`
+          : `single-${product.id}-${mode.slug}`;
+
         set((state) => {
           const existingItem = state.items.find((item) => item.id === cartItemId);
-          
+
           if (existingItem) {
             return {
               items: state.items.map((item) =>
                 item.id === cartItemId
-                  ? { ...item, quantity: item.quantity + quantity }
-                  : item
+                  ? { ...item, quantity: item.quantity + quantity, price: unitPrice }
+                  : item,
               ),
             };
           }
-          
-            const isBundle = !!addOn;
-            let combinationId: number | undefined;
 
-            let comboPrice: number | undefined;
+          const isBundle = Boolean(addOn);
+          let combinationId: number | undefined;
 
-            if (isBundle && (group as any)._combinations) {
-              const combo = (group as any)._combinations.find((c: any) => 
-                String(c.product_option_id) === String(product.id) && 
-                String(c.lid_option_id) === String(addOn.id)
-              );
-              if (combo) {
-                combinationId = combo.id;
-                if (Number(combo.price) > 0) {
-                  comboPrice = Number(combo.price);
-                }
-              }
-            }
+          if (isBundle && (group as any)._combinations) {
+            const combination = (group as any)._combinations.find((item: any) =>
+              String(item.product_option_id) === String(product.id)
+              && String(item.lid_option_id) === String(addOn?.id),
+            );
+            if (combination) combinationId = Number(combination.id);
+          }
 
-            const newItem: CartItem = {
-              id: cartItemId,
-              type: isBundle ? 'bundle' : 'single',
-              
-              productGroupId: group.id,
-              groupName: group.name,
-              groupSlug: group.slug,
-              
-              mainProductId: product.id,
-              mainProductName: product.name,
-              mainSku: product.sku,
-              mainPrice: product.salePrice || product.price,
-              
-              addOnProductId: addOn?.id,
-              addOnProductName: addOn?.name,
-              addOnSku: addOn?.sku,
-              addOnPrice: addOn ? (addOn.salePrice || addOn.price) : undefined,
-              
-              displayName: addOn ? `${group.name} + ${addOn.name}` : group.name,
-              price: comboPrice !== undefined 
-                ? comboPrice 
-                : (product.salePrice || product.price) + (addOn ? (addOn.salePrice || addOn.price) : 0),
-              quantity,
-              image: product.image || group.image,
-              stock: addOn ? Math.min(product.stock, addOn.stock) : product.stock,
-              minOrder: product.minimumOrder || 1,
-              orderStep: product.orderStep || 1,
-              unitName: group.unitName || "Pcs",
-              combinationId,
-              categories: group.categories,
-              erpProductId: product.erpProductId,
-              erpCategoryIds: product.erpCategoryIds,
-              isSelected: true,
-            };
-          
+          const newItem: CartItem = {
+            id: cartItemId,
+            type: isBundle ? 'bundle' : 'single',
+            productGroupId: group.id,
+            groupName: group.name,
+            groupSlug: group.slug,
+            mainProductId: product.id,
+            mainProductName: product.name,
+            mainSku: product.sku,
+            mainPrice: product.modePrices?.find((price) => price.slug === mode.slug)?.price
+              ?? product.salePrice
+              ?? product.price,
+            addOnProductId: addOn?.id,
+            addOnProductName: addOn?.name,
+            addOnSku: addOn?.sku,
+            addOnPrice: addOn?.modePrices?.find((price) => price.slug === mode.slug)?.price
+              ?? addOn?.salePrice
+              ?? addOn?.price,
+            displayName: addOn ? `${group.name} + ${addOn.name}` : group.name,
+            price: unitPrice,
+            quantity,
+            image: product.image || group.image,
+            stock: addOn ? Math.min(product.stock, addOn.stock) : product.stock,
+            minOrder: product.minimumOrder || 1,
+            orderStep: product.orderStep || 1,
+            unitName: group.unitName || 'Pcs',
+            combinationId,
+            modeSlug: mode.slug,
+            modeName: mode.name,
+            categories: group.categories,
+            erpProductId: product.erpProductId,
+            erpCategoryIds: product.erpCategoryIds,
+            isSelected: true,
+          };
+
           return { items: [...state.items, newItem] };
         });
       },
-      
-      removeItem: (cartItemId) => {
-        set((state) => ({
-          items: state.items.filter((item) => item.id !== cartItemId),
-        }));
-      },
-      
-      updateQuantity: (cartItemId, quantity) => {
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === cartItemId ? { ...item, quantity } : item
-          ),
-        }));
-      },
-      
-      toggleSelection: (cartItemId) => {
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === cartItemId ? { ...item, isSelected: item.isSelected === false ? true : false } : item
-          ),
-        }));
-      },
-      
-      toggleAllSelection: (selected) => {
-        set((state) => ({
-          items: state.items.map((item) => ({ ...item, isSelected: selected })),
-        }));
-      },
-      
+
+      removeItem: (cartItemId) => set((state) => ({
+        items: state.items.filter((item) => item.id !== cartItemId),
+      })),
+
+      updateQuantity: (cartItemId, quantity) => set((state) => ({
+        items: state.items.map((item) => item.id === cartItemId ? { ...item, quantity } : item),
+      })),
+
+      toggleSelection: (cartItemId) => set((state) => ({
+        items: state.items.map((item) =>
+          item.id === cartItemId
+            ? { ...item, isSelected: item.isSelected === false }
+            : item,
+        ),
+      })),
+
+      toggleAllSelection: (selected) => set((state) => ({
+        items: state.items.map((item) => ({ ...item, isSelected: selected })),
+      })),
+
       clearCart: () => set({ items: [] }),
       replaceItems: (items) => set({ items }),
       clearSelectedItems: () => set((state) => ({
-        items: state.items.filter((item) => item.isSelected === false)
+        items: state.items.filter((item) => item.isSelected === false),
       })),
-      
-      getSubtotal: () => {
-        return get().items
-          .filter(item => item.isSelected !== false)
-          .reduce((total, item) => total + item.price * item.quantity, 0);
-      },
-      
-      getTotalCount: () => {
-        return get().items
-          .filter(item => item.isSelected !== false)
-          .reduce((total, item) => total + item.quantity, 0);
-      },
+
+      getSubtotal: () => get().items
+        .filter((item) => item.isSelected !== false)
+        .reduce((total, item) => total + item.price * item.quantity, 0),
+
+      getTotalCount: () => get().items
+        .filter((item) => item.isSelected !== false)
+        .reduce((total, item) => total + item.quantity, 0),
     }),
     {
       name: 'alisan-cart-storage',
-      version: 5, // Invalidate old schema
+      version: 6,
       migrate: (persistedState: any, version: number) => {
-        if (version !== 5) {
-          return { items: [] };
-        }
+        if (version !== 6) return { items: [] };
         return persistedState;
       },
-    }
-  )
+    },
+  ),
 );

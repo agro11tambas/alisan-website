@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ProductGroup, Product, AddOnProduct } from "@/types";
+import { ProductGroup, Product, AddOnProduct, ModePrice } from "@/types";
 import { useCartStore } from "@/stores/useCartStore";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [lids, setLids] = useState<AddOnProduct[]>([]);
   const [selectedLid, setSelectedLid] = useState<AddOnProduct | null>(null);
+  const [selectedMode, setSelectedMode] = useState<ModePrice | null>(null);
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore(state => state.addItem);
   const { isLoggedIn } = useCurrentCustomer();
@@ -85,6 +86,14 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
   const handleSelect = (p: Product) => {
     setSelectedProduct(p);
+    const combination = selectedLid
+      ? (group as any)._combinations?.find((item: any) =>
+          String(item.product_option_id) === String(p.id)
+          && String(item.lid_option_id) === String(selectedLid.id),
+        )
+      : null;
+    const prices: ModePrice[] = combination?.modePrices?.length ? combination.modePrices : (p.modePrices || []);
+    setSelectedMode(prices.find((price) => price.slug === "polosan") || prices[0] || null);
     setQuantity(p.minimumOrder || 1);
     if (onImageChange) {
       const comboImage = selectedLid ? getCombinationImage(p.id, selectedLid.id) : null;
@@ -97,6 +106,21 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
   const handleSelectLid = (lid: AddOnProduct | null) => {
     setSelectedLid(lid);
+    const combination = selectedProduct && lid
+      ? (group as any)._combinations?.find((item: any) =>
+          String(item.product_option_id) === String(selectedProduct.id)
+          && String(item.lid_option_id) === String(lid.id),
+        )
+      : null;
+    const prices: ModePrice[] = combination?.modePrices?.length
+      ? combination.modePrices
+      : (selectedProduct?.modePrices || []);
+    setSelectedMode((current) =>
+      prices.find((price) => price.slug === current?.slug)
+      || prices.find((price) => price.slug === "polosan")
+      || prices[0]
+      || null,
+    );
     if (selectedProduct) {
       const maxLidStock = lid ? lid.stock : Infinity;
       const finalMax = Math.min(selectedProduct.stock, maxLidStock);
@@ -150,7 +174,12 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       return false;
     }
 
-    addItem(group, selectedProduct, quantity, selectedLid || undefined);
+    if (!selectedMode) {
+      toast.error("Mode belum tersedia untuk varian ini");
+      return false;
+    }
+
+    addItem(group, selectedProduct, quantity, selectedMode, displayPrice, selectedLid || undefined);
     toast.success("Berhasil Ditambahkan", {
       description: `${quantity.toLocaleString("id-ID")}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`
     });
@@ -159,28 +188,29 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
 
 
-  const getCombinationPricing = (productId: string, lidId?: string) => {
-    if (!lidId) return null;
-    const combo = (group as any)._combinations?.find(
-      (c: any) => String(c.product_option_id) === String(productId) && String(c.lid_option_id) === String(lidId)
-    );
-    if (combo && Number(combo.price) > 0) {
-      return {
-        price: Number(combo.price),
-        salePrice: combo.salePrice ? Number(combo.salePrice) : undefined
-      };
-    }
-    return null;
-  };
+  const selectedCombination = selectedProduct && selectedLid
+    ? (group as any)._combinations?.find(
+        (combination: any) => String(combination.product_option_id) === String(selectedProduct.id)
+          && String(combination.lid_option_id) === String(selectedLid.id),
+      )
+    : null;
 
-  const comboPricing = selectedProduct && selectedLid ? getCombinationPricing(selectedProduct.id, selectedLid.id) : null;
+  const availableModePrices: ModePrice[] = selectedCombination?.modePrices?.length
+    ? selectedCombination.modePrices
+    : (selectedProduct?.modePrices || []);
+
+
+  const selectedModePrice = availableModePrices.find((price) => price.slug === selectedMode?.slug);
+  const comboPricing = selectedCombination && selectedModePrice
+    ? { price: selectedModePrice.price, salePrice: undefined }
+    : null;
   const canShowPrice = !lidSelectionRequired || Boolean(selectedLid);
   
   const displayPrice = selectedProduct 
     ? (
         comboPricing 
           ? (comboPricing.salePrice || comboPricing.price)
-          : ((selectedProduct.salePrice || selectedProduct.price) + (selectedLid ? (selectedLid.salePrice || selectedLid.price) : 0))
+          : (selectedModePrice?.price ?? ((selectedProduct.salePrice || selectedProduct.price) + (selectedLid ? (selectedLid.salePrice || selectedLid.price) : 0)))
       )
     : Math.min(...group.products.map(p => p.salePrice ?? p.price));
 
@@ -290,7 +320,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                         : 'border-gray-300 text-gray-700 hover:border-primary/50'
                   }`}
                 >
-                  {lid.name} (+Rp {(lid.salePrice || lid.price).toLocaleString('id-ID')})
+                  {lid.name}
                 </button>
               );
             })}
@@ -300,6 +330,22 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
 
 
+      {selectedProduct && availableModePrices.length > 0 && (
+        <div className="border-t-[6px] border-gray-100 md:border-t md:border-gray-100 pt-3 md:pt-3 pb-2 px-3 md:px-0">
+          <div className="flex justify-between items-center mb-2.5">
+            <h3 className="text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">Mode</h3>
+            {!selectedMode && <span className="text-[10px] font-semibold text-red-600">Wajib pilih mode</span>}
+          </div>
+          <div className="flex flex-wrap gap-2 pb-1">
+            {availableModePrices.map((mode) => (
+              <button key={mode.slug} type="button" onClick={() => setSelectedMode(mode)}
+                className={`h-9 md:h-8 px-4 md:px-3 text-sm md:text-xs font-medium rounded-md border transition-all ${selectedMode?.slug === mode.slug ? "border-primary text-primary bg-blue-50 ring-1 ring-primary" : "border-gray-300 text-gray-700 hover:border-primary/50"}`}>
+                {mode.name} · Rp {mode.price.toLocaleString("id-ID")}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {/* Selected Summary */}
       {selectedProduct && (
         <div className="border-t-[6px] border-gray-100 md:border-none mb-1.5 md:mb-3 bg-gray-50 md:bg-gray-50 p-2 md:px-3 md:py-2 mx-3 md:mx-0 rounded border border-gray-200 md:border-gray-100 text-xs mt-3 md:mt-0">
@@ -307,6 +353,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             <div className="truncate pr-2">
               <span className="text-gray-500">Terpilih: </span>
               <span className="font-medium text-gray-900">{selectedProduct.name}</span>
+              {selectedMode && <span className="text-gray-500"> · Mode: <span className="font-medium text-gray-900">{selectedMode.name}</span></span>}
               {lids.length > 0 && (allowWithoutLid || selectedLid) && (
                 <span className="text-gray-500"> · {group.lidGroupName || "Tutup"}: <span className="font-medium text-gray-900">{selectedLid ? selectedLid.name : `Tanpa ${group.lidGroupName || "Tutup"}`}</span></span>
               )}
@@ -363,7 +410,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
         <div className="flex gap-3">
           <button 
             onClick={handleAddToCart}
-            disabled={!selectedProduct || (lidSelectionRequired && !selectedLid)}
+            disabled={!selectedProduct || !selectedMode || (lidSelectionRequired && !selectedLid)}
             className="w-full h-10 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold text-sm rounded-md hover:bg-primary/90 transition-colors shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           >
             <ShoppingCart size={18} />
@@ -502,6 +549,20 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
               </div>
             )}
 
+            {selectedProduct && availableModePrices.length > 0 && (
+              <div>
+                <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">Mode</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {availableModePrices.map((mode) => (
+                    <button key={mode.slug} type="button" onClick={() => setSelectedMode(mode)}
+                      className={`min-h-[40px] w-full px-2 text-left text-[13px] font-medium rounded-sm border transition-all ${selectedMode?.slug === mode.slug ? "border-primary text-primary bg-primary/5 ring-1 ring-primary" : "border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50"}`}>
+                      <span className="block">{mode.name}</span>
+                      <span className="block text-[11px]">Rp {mode.price.toLocaleString("id-ID")}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="shrink-0 border-t border-gray-100 bg-white px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
@@ -534,7 +595,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             </div>
             <button 
               onClick={handleAddToCartFromSheet}
-              disabled={!selectedProduct || (lidSelectionRequired && !selectedLid)}
+              disabled={!selectedProduct || !selectedMode || (lidSelectionRequired && !selectedLid)}
               className={`w-full h-[44px] rounded flex items-center justify-center font-bold text-[15px] transition-colors ${!selectedProduct || (lidSelectionRequired && !selectedLid) ? 'bg-gray-100 text-gray-400' : 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90'}`}
             >
               Masukkan Keranjang

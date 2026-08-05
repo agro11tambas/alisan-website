@@ -101,7 +101,7 @@ export default function CheckoutPage() {
         ecommerce_variant_combination_id: item.combinationId ? Number(item.combinationId) : undefined,
         variant_option_id: (!item.combinationId && String(item.mainProductId) !== String(item.productGroupId)) ? Number(item.mainProductId) : undefined,
         quantity: item.quantity,
-        mode: "printing",
+        mode: item.modeSlug,
       })),
     };
 
@@ -170,6 +170,7 @@ export default function CheckoutPage() {
         } else {
           message += `${index + 1}. ${item.groupName} - ${item.mainProductName}\n`;
         }
+        message += `Mode: ${item.modeName}\n`;
         message += `Rp ${item.price.toLocaleString('id-ID')} x ${item.quantity.toLocaleString('id-ID')} ${item.unitName || "Pcs"} = Rp ${itemSubtotal.toLocaleString('id-ID')}\n\n`;
       });
       
@@ -426,6 +427,9 @@ export default function CheckoutPage() {
                         <div className="text-sm text-gray-600 mt-1">
                           {item.mainProductName}
                           {item.type === 'bundle' && item.addOnProductName && ` + ${item.addOnProductName}`}
+                        </div>
+                        <div className="mt-1 inline-flex rounded bg-blue-50 px-2 py-0.5 text-xs font-semibold text-primary">
+                          Mode: {item.modeName}
                         </div>
                         <div className="mt-1 flex items-center gap-2 text-sm">
                           {itemDiscount > 0 ? (

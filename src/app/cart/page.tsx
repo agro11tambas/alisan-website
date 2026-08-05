@@ -118,6 +118,9 @@ export default function CartPage() {
                           {item.mainProductName}
                           {item.type === 'bundle' && item.addOnProductName && ` + ${item.addOnProductName}`}
                         </div>
+                        <div className="mt-1 inline-flex w-fit rounded bg-blue-50 px-2 py-0.5 text-xs font-semibold text-primary">
+                          Mode: {item.modeName}
+                        </div>
 
                         {/* Grid Table */}
                         <div className="w-full sm:w-fit mt-1 sm:mt-2">

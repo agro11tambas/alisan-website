@@ -6,6 +6,14 @@ export interface Category {
   icon?: string;
 }
 
+export type ModePrice = {
+  priceModeId: number;
+  slug: string;
+  name: string;
+  fixedCost: number;
+  margin: number;
+  price: number;
+};
 export type Product = {
   id: string;
   name: string;
@@ -22,6 +30,7 @@ export type Product = {
   orderStep: number;
   erpProductId?: string;
   erpCategoryIds?: string[];
+  modePrices?: ModePrice[];
 };
 
 export type AddOnProduct = {
@@ -35,6 +44,7 @@ export type AddOnProduct = {
   gallery?: string[];
   erpProductId?: string;
   erpCategoryIds?: string[];
+  modePrices?: ModePrice[];
 };
 
 export type ProductGroup = {
@@ -82,6 +92,8 @@ export type CartItem = {
   orderStep: number;
   unitName?: string;
   combinationId?: number;
+  modeSlug: string;
+  modeName: string;
   categories?: string[];
   erpProductId?: string;
   erpCategoryIds?: string[];

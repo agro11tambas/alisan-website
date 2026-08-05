@@ -1,7 +1,15 @@
 import { api } from "./api";
-import { ProductGroup, AddOnProduct, Product } from "@/types";
+import { ProductGroup, AddOnProduct, Product, ModePrice } from "@/types";
 import { cache } from "react";
 
+const mapModePrices = (prices: any[] = []): ModePrice[] => prices.map((price: any) => ({
+  priceModeId: Number(price.price_mode_id),
+  slug: String(price.slug),
+  name: String(price.name),
+  fixedCost: Number(price.fixed_cost || 0),
+  margin: Number(price.margin || 0),
+  price: Number(price.price || 0),
+}));
 const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
   return apiData.map((ecProduct: any) => {
     let products: Product[] = [];
@@ -30,6 +38,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
           allowWithoutLid: Boolean(opt.allow_without_lid ?? true),
           erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
+          modePrices: mapModePrices(opt.mode_prices),
         };
       });
     } else {
@@ -58,6 +67,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           image: opt.image || imageUrl,
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
           erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
+          modePrices: mapModePrices(opt.mode_prices),
         };
       });
     }
@@ -66,6 +76,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
       ...comb,
       price: Number(comb.original_price || comb.price || 0),
       salePrice: comb.sale_price ? Number(comb.sale_price) : ((comb.original_price && Number(comb.price) < Number(comb.original_price)) ? Number(comb.price) : undefined),
+      modePrices: mapModePrices(comb.mode_prices),
     })) || [];
 
     return {
