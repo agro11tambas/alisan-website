@@ -6,12 +6,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import axios from "axios";
-import { User, Settings as SettingsIcon, Save, LogOut, Briefcase, MapPin, X, Edit2, Trash2, KeyRound, ShieldCheck } from "lucide-react";
+import { User, Settings as SettingsIcon, Save, LogOut, Briefcase, MapPin, KeyRound, ShieldCheck } from "lucide-react";
 import { api } from "@/services/api";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
 import { notifyCustomerAuthChanged } from "@/lib/customer-auth-events";
 import { clearCustomerSession } from "@/lib/customer-session";
-import type { Address } from "@/types";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter"),
@@ -32,14 +31,6 @@ const passwordSchema = z.object({
 });
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
-const addressSchema = z.object({
-  businessName: z.string().optional(),
-  address: z.string().min(10, "Harap berikan alamat lengkap"),
-  googleMaps: z.string().optional(),
-  isDefault: z.boolean().optional(),
-});
-type AddressFormValues = z.infer<typeof addressSchema>;
-
 export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -48,11 +39,7 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState("");
   const [activeTab, setActiveTab] = useState<'profile' | 'business' | 'password'>('profile');
   
-  // Business & address states
-  const [addressFormForCustomerId, setAddressFormForCustomerId] = useState<number | null>(null);
-  const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const [expandedBusinessId, setExpandedBusinessId] = useState<number | null>(null);
-  const [deletingAddressId, setDeletingAddressId] = useState<number | null>(null);
 
   const router = useRouter();
   const { customer, refreshCustomer } = useCurrentCustomer();
@@ -74,16 +61,6 @@ export default function SettingsPage() {
     formState: { errors: passwordErrors },
   } = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
-  });
-
-  const {
-    register: registerAddress,
-    handleSubmit: handleSubmitAddress,
-    reset: resetAddress,
-    setValue: setAddressValue,
-    formState: { errors: addressErrors },
-  } = useForm<AddressFormValues>({
-    resolver: zodResolver(addressSchema),
   });
 
   useEffect(() => {
@@ -186,52 +163,6 @@ export default function SettingsPage() {
     } finally {
       setIsChangingPassword(false);
     }
-  };
-
-  const handleSaveAddress = async (data: AddressFormValues) => {
-    if (!addressFormForCustomerId || !editingAddressId) return;
-    try {
-      await api.put(`/ecommerce/auth/addresses/${editingAddressId}`, {
-        business_name: data.businessName,
-        address: data.address,
-        google_maps: data.googleMaps,
-        is_default: data.isDefault,
-      });
-      await refreshCustomer();
-      setAddressFormForCustomerId(null);
-      setEditingAddressId(null);
-      resetAddress();
-    } catch {
-      alert("Gagal menyimpan alamat");
-    }
-  };
-
-  const handleDeleteAddress = async (addressId: number) => {
-    if (!confirm("Yakin ingin menghapus alamat ini?")) return;
-    setDeletingAddressId(addressId);
-    try {
-      await api.delete(`/ecommerce/auth/addresses/${addressId}`);
-      await refreshCustomer();
-    } catch {
-      alert("Gagal menghapus alamat");
-    } finally {
-      setDeletingAddressId(null);
-    }
-  };
-
-  const openEditAddress = (addr: Address, customerId: number) => {
-    setAddressFormForCustomerId(customerId);
-    setEditingAddressId(Number(addr.id));
-    setAddressValue("businessName", addr.business_name || "");
-    setAddressValue("address", addr.address || "");
-    setAddressValue("googleMaps", addr.google_maps || "");
-    setAddressValue("isDefault", addr.is_default || false);
-  };
-
-  const cancelAddressForm = () => {
-    setAddressFormForCustomerId(null);
-    setEditingAddressId(null);
-    resetAddress();
   };
 
   const handleLogout = async () => {
@@ -507,7 +438,11 @@ export default function SettingsPage() {
                 {expandedBusinessId === biz.id && (
                   <div className="border-t border-gray-100 px-4 py-3 space-y-2">
 
-                    {(!biz.addresses || biz.addresses.length === 0) && addressFormForCustomerId !== biz.id && (
+                    <p className="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                      Alamat hanya dapat dilihat. Hubungi admin untuk melakukan perubahan.
+                    </p>
+
+                    {(!biz.addresses || biz.addresses.length === 0) && (
                       <div className="text-center py-4">
                         <MapPin size={28} className="mx-auto text-gray-300 mb-2" />
                         <p className="text-sm text-gray-500 mb-3">Belum ada alamat untuk bisnis ini.</p>
@@ -515,7 +450,7 @@ export default function SettingsPage() {
                     )}
 
                     {biz.addresses?.map((addr) => (
-                      <div key={addr.id} className="relative border border-gray-200 rounded-md p-3 flex items-start gap-3 group hover:border-primary/30 transition-colors">
+                      <div key={addr.id} className="relative border border-gray-200 rounded-md p-3 flex items-start gap-3">
                         <MapPin size={16} className="text-gray-400 mt-0.5 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
@@ -531,69 +466,8 @@ export default function SettingsPage() {
                             </a>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openEditAddress(addr, biz.id)}
-                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 rounded-full transition-colors"
-                            title="Edit"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteAddress(Number(addr.id))}
-                            disabled={deletingAddressId === Number(addr.id)}
-                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
-                            title="Hapus"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
                       </div>
                     ))}
-
-                    {/* Address Edit Form */}
-                    {addressFormForCustomerId === biz.id && editingAddressId && (
-                      <div className="border border-primary/20 bg-primary/5 rounded-md p-3 mt-2">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-bold text-gray-900">Edit Alamat</h4>
-                          <button onClick={cancelAddressForm} className="text-gray-400 hover:text-gray-600">
-                            <X size={18} />
-                          </button>
-                        </div>
-                        <form onSubmit={handleSubmitAddress(handleSaveAddress)} className="space-y-3">
-                          <div>
-                            <input
-                              {...registerAddress("businessName")}
-                              className="w-full h-11 px-3 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/50 outline-none"
-                              placeholder="Nama Bisnis/Cabang (Opsional)"
-                            />
-                          </div>
-                          <div>
-                            <textarea
-                              {...registerAddress("address")}
-                              rows={3}
-                              className={`w-full p-3 text-sm border rounded-md focus:ring-1 focus:ring-primary/50 outline-none min-h-24 ${addressErrors.address ? 'border-red-500' : 'border-gray-300'}`}
-                              placeholder="Alamat Lengkap *"
-                            ></textarea>
-                            {addressErrors.address && <span className="text-[10px] text-red-500">{addressErrors.address.message}</span>}
-                          </div>
-                          <div>
-                            <input
-                              {...registerAddress("googleMaps")}
-                              className="w-full h-11 px-3 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/50 outline-none"
-                              placeholder="Tautan Google Maps (Opsional)"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <input type="checkbox" id={`isDefault-${biz.id}`} {...registerAddress("isDefault")} className="rounded text-primary focus:ring-primary w-4 h-4" />
-                            <label htmlFor={`isDefault-${biz.id}`} className="text-sm font-medium text-gray-700 cursor-pointer">Jadikan utama</label>
-                          </div>
-                          <button type="submit" className="w-full h-10 bg-primary text-white text-sm rounded-md font-medium hover:bg-primary/90">
-                            Simpan Perubahan
-                          </button>
-                        </form>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

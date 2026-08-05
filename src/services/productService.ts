@@ -10,6 +10,15 @@ const mapModePrices = (prices: any[] = []): ModePrice[] => prices.map((price: an
   margin: Number(price.margin || 0),
   price: Number(price.price || 0),
 }));
+
+const firstImageUrl = (...candidates: unknown[]): string | undefined => {
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+  }
+
+  return undefined;
+};
+
 const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
   return apiData.map((ecProduct: any) => {
     let products: Product[] = [];
@@ -18,8 +27,10 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
     const productOptionGroup = ecProduct.variant_groups?.[0];
     const lidOptionGroup = ecProduct.variant_groups?.[1];
 
-    // Use main_image from backend, fallback to placeholder
-    const imageUrl = ecProduct.main_image || "/image/Placeholder.jpg";
+    // ERP's appended attributes contain public URLs; `main_image` can still
+    // contain a storage path, so it is only a final fallback.
+    const imageUrl = firstImageUrl(ecProduct.image, ecProduct.image_url, ecProduct.main_image)
+      || "/image/Placeholder.jpg";
 
     if (productOptionGroup && productOptionGroup.options) {
       products = productOptionGroup.options.map((opt: any) => {
@@ -34,7 +45,15 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           optionName: opt.alias || erpProd.name,
           minimumOrder: Number(ecProduct.min_qty || 1),
           orderStep: Number(ecProduct.multiple_qty || 1),
-          image: opt.image || imageUrl,
+          image: firstImageUrl(
+            opt.image_url,
+            opt.image,
+            erpProd.image_url,
+            erpProd.image,
+            erpProd.thumbnail_url,
+            erpProd.thumbnail,
+            imageUrl,
+          ),
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
           allowWithoutLid: Boolean(opt.allow_without_lid ?? true),
           erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
@@ -64,7 +83,15 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           price: Number(opt.original_price || opt.price || erpProd.price || 0),
           salePrice: (opt.original_price && Number(opt.price) < Number(opt.original_price)) ? Number(opt.price) : (Number(erpProd.sale_price) > 0 ? Number(erpProd.sale_price) : undefined),
           stock: Number(ecProduct.max_qty || 1000),
-          image: opt.image || imageUrl,
+          image: firstImageUrl(
+            opt.image_url,
+            opt.image,
+            erpProd.image_url,
+            erpProd.image,
+            erpProd.thumbnail_url,
+            erpProd.thumbnail,
+            imageUrl,
+          ),
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
           erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
           modePrices: mapModePrices(opt.mode_prices),
@@ -76,8 +103,18 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
       ...comb,
       price: Number(comb.original_price || comb.price || 0),
       salePrice: comb.sale_price ? Number(comb.sale_price) : ((comb.original_price && Number(comb.price) < Number(comb.original_price)) ? Number(comb.price) : undefined),
+      image: firstImageUrl(comb.image_url, comb.image),
       modePrices: mapModePrices(comb.mode_prices),
     })) || [];
+
+    const gallery = (ecProduct.gallery_images || [])
+      .map((galleryImage: any) => firstImageUrl(
+        galleryImage?.image_url,
+        galleryImage?.url,
+        galleryImage?.image,
+        galleryImage,
+      ))
+      .filter((galleryImage: string | undefined): galleryImage is string => Boolean(galleryImage));
 
     return {
       id: String(ecProduct.id),
@@ -89,9 +126,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
       rating: 5.0,
       totalSold: 0,
       image: imageUrl,
-      gallery: ecProduct.gallery_images?.length > 0 
-        ? ecProduct.gallery_images.map((g: any) => g.image_url) 
-        : (ecProduct.main_image ? [ecProduct.main_image] : ["/image/Placeholder.jpg"]),
+      gallery: gallery.length > 0 ? gallery : [imageUrl],
       productGroupName: productOptionGroup?.name || "Opsi Produk",
       lidGroupName: lidOptionGroup?.name || "Opsi Tutup",
       unitName: ecProduct.unit?.name || "Pcs",

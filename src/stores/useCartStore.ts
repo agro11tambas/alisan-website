@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, Product, ProductGroup, AddOnProduct, ModePrice } from '@/types';
+import { findProductCombination, getSelectedProductImage } from '@/utils/productImageUtils';
 
 interface CartState {
   items: CartItem[];
@@ -35,12 +36,16 @@ export const useCartStore = create<CartState>()(
 
         set((state) => {
           const existingItem = state.items.find((item) => item.id === cartItemId);
+          const combination = addOn
+            ? findProductCombination(group, product.id, addOn.id)
+            : undefined;
+          const selectedImage = getSelectedProductImage(group, product, addOn);
 
           if (existingItem) {
             return {
               items: state.items.map((item) =>
                 item.id === cartItemId
-                  ? { ...item, quantity: item.quantity + quantity, price: unitPrice }
+                  ? { ...item, quantity: item.quantity + quantity, price: unitPrice, image: selectedImage }
                   : item,
               ),
             };
@@ -49,13 +54,7 @@ export const useCartStore = create<CartState>()(
           const isBundle = Boolean(addOn);
           let combinationId: number | undefined;
 
-          if (isBundle && (group as any)._combinations) {
-            const combination = (group as any)._combinations.find((item: any) =>
-              String(item.product_option_id) === String(product.id)
-              && String(item.lid_option_id) === String(addOn?.id),
-            );
-            if (combination) combinationId = Number(combination.id);
-          }
+          if (isBundle && combination) combinationId = Number(combination.id);
 
           const newItem: CartItem = {
             id: cartItemId,
@@ -78,7 +77,7 @@ export const useCartStore = create<CartState>()(
             displayName: addOn ? `${group.name} + ${addOn.name}` : group.name,
             price: unitPrice,
             quantity,
-            image: product.image || group.image,
+            image: selectedImage,
             stock: addOn ? Math.min(product.stock, addOn.stock) : product.stock,
             minOrder: product.minimumOrder || 1,
             orderStep: product.orderStep || 1,
