@@ -4,6 +4,10 @@ export interface Category {
   slug: string;
   image: string;
   icon?: string;
+  description?: string;
+  parentId?: string;
+  sortOrder: number;
+  children: Category[];
 }
 
 export type ModePrice = {

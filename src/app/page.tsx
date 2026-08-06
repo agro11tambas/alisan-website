@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const [categories, groups] = await Promise.all([
-    categoryService.getCategories(),
+    categoryService.getCategoryTree(),
     productService.getProductGroups({ limit: 5 }),
   ]);
 
@@ -67,6 +67,11 @@ export default async function Home() {
                   <span className="line-clamp-2 text-[10px] font-medium leading-tight text-gray-700 transition-colors group-hover:text-primary md:text-xs">
                     {category.name}
                   </span>
+                  {category.children.length > 0 && (
+                    <span className="text-[9px] leading-none text-gray-400 md:text-[10px]">
+                      {category.children.length} sub
+                    </span>
+                  )}
                 </Link>
               ))}
             </div>

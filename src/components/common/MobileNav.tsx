@@ -64,10 +64,16 @@ export default function MobileNav({ onClose }: MobileNavProps) {
   const { customer, isLoggedIn } = useCurrentCustomer();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [openCategoryIds, setOpenCategoryIds] = useState<string[]>([]);
 
   useEffect(() => {
-    categoryService.getCategories().then(setCategories);
+    categoryService.getCategoryTree().then(setCategories);
   }, []);
+
+  const toggleCategory = (id: string) =>
+    setOpenCategoryIds((ids) =>
+      ids.includes(id) ? ids.filter((openId) => openId !== id) : [...ids, id],
+    );
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -108,18 +114,56 @@ export default function MobileNav({ onClose }: MobileNavProps) {
             </button>
             
             {/* Expanded Categories */}
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isCategoriesOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isCategoriesOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}>
               <div className="bg-gray-50/50 py-2 flex flex-col border-y border-gray-100">
-                {categories.map(cat => (
-                  <Link 
-                    key={cat.id}
-                    href={`/products?category=${cat.slug}`}
-                    onClick={onClose}
-                    className="flex items-center px-4 py-2.5 pl-[52px] h-11 text-sm text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors font-medium"
-                  >
-                    • {cat.name}
-                  </Link>
-                ))}
+                {categories.map(cat => {
+                  const hasChildren = cat.children.length > 0;
+                  const isOpen = openCategoryIds.includes(cat.id);
+
+                  return (
+                    <div key={cat.id}>
+                      <div className="flex items-center pr-2">
+                        <Link
+                          href={`/products?category=${cat.slug}`}
+                          onClick={onClose}
+                          className="flex flex-1 items-center h-11 pl-[52px] pr-2 text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors"
+                        >
+                          {cat.name}
+                        </Link>
+
+                        {hasChildren && (
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(cat.id)}
+                            aria-expanded={isOpen}
+                            aria-label={`${isOpen ? "Tutup" : "Buka"} subkategori ${cat.name}`}
+                            className="grid size-8 shrink-0 place-items-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                          >
+                            <ChevronDown
+                              size={16}
+                              className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                        )}
+                      </div>
+
+                      {hasChildren && isOpen && (
+                        <div className="flex flex-col border-l border-gray-200 ml-[60px] mb-1">
+                          {cat.children.map(child => (
+                            <Link
+                              key={child.id}
+                              href={`/products?category=${child.slug}`}
+                              onClick={onClose}
+                              className="flex items-center h-10 pl-4 pr-2 text-[13px] text-gray-500 hover:text-primary hover:bg-primary/5 transition-colors"
+                            >
+                              {child.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
