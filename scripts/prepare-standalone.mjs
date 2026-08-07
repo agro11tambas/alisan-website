@@ -88,6 +88,41 @@ if (cssFiles.length === 0) {
   );
 }
 
+// Next's file tracing copies sharp's `.node` binary but misses the shared
+// libraries it links against (libvips-42.dll on Windows, *.so.* on Linux).
+// Without them sharp fails to load and the image optimizer silently falls back
+// to serving the original file, which is what `unoptimized: true` used to hide.
+const imgSource = join(projectRoot, "node_modules", "@img");
+const imgDestination = join(standaloneDirectory, "node_modules", "@img");
+
+if (!existsSync(imgSource)) {
+  throw new Error(
+    "sharp's @img packages are missing from node_modules. Run `npm install --include=optional sharp`.",
+  );
+}
+
+const nativeFileCount = copyDirectory(
+  imgSource,
+  imgDestination,
+  "sharp native binaries",
+);
+
+// Loading sharp is the only reliable proof the binaries are complete.
+const sharpEntry = join(standaloneDirectory, "node_modules", "sharp", "dist", "sharp.cjs");
+
+if (existsSync(sharpEntry)) {
+  const { createRequire } = await import("node:module");
+  const requireFromStandalone = createRequire(sharpEntry);
+
+  try {
+    requireFromStandalone(sharpEntry);
+  } catch (error) {
+    throw new Error(
+      `Standalone package cannot load sharp, so images would be served unoptimized:\n${error.message}`,
+    );
+  }
+}
+
 console.log(
-  `Standalone package ready: ${staticFileCount} Next.js assets (${cssFiles.length} CSS) and ${publicFileCount} public assets.`,
+  `Standalone package ready: ${staticFileCount} Next.js assets (${cssFiles.length} CSS), ${publicFileCount} public assets and ${nativeFileCount} sharp native files.`,
 );

@@ -4,7 +4,9 @@ import { productService } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
 import FeaturedProductCarousel from "@/components/product/FeaturedProductCarousel";
 
-export const dynamic = 'force-dynamic';
+// Katalog jarang berubah, jadi halaman ini di-render ulang paling sering tiap 5
+// menit alih-alih tiap kunjungan.
+export const revalidate = 300;
 
 export default async function Home() {
   const [categories, groups] = await Promise.all([
@@ -19,7 +21,7 @@ export default async function Home() {
         <div className="w-full px-2 sm:container sm:mx-auto sm:px-4">
           <div className="relative overflow-hidden rounded-lg border border-gray-100 shadow-sm aspect-[1672/941] md:rounded-2xl">
             <Image
-              src="/images/banner-true.png"
+              src="/images/banner-true.webp"
               alt="Banner promosi Alisan"
               fill
               className="object-cover"

@@ -3,8 +3,23 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
-    unoptimized: true,
+    // Foto produk dari ERP diunggah sebagai PNG 1254x1254 (~1,5 MB). Optimasi
+    // mengecilkannya ke ukuran tampil sebenarnya dan mengubahnya ke WebP, jadi
+    // `unoptimized` tidak boleh dinyalakan lagi.
+    formats: ["image/webp"],
+    qualities: [75],
+    minimumCacheTTL: 2678400, // 31 hari; gambar produk jarang berubah
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'erpalisan.com',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'alisan_code.test',
+        pathname: '/uploads/**',
+      },
       {
         protocol: 'http',
         hostname: 'localhost',
