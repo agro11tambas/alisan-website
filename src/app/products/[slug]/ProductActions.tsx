@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Minus, Plus, ShoppingCart, AlertCircle, MessageSquare, Heart, ShieldCheck, ZoomIn, X } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
+import { useCloseOnBack } from "@/hooks/use-close-on-back";
 
 interface ProductActionsProps {
   group: ProductGroup;
@@ -29,6 +30,10 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   const allowWithoutLid = selectedProduct?.allowWithoutLid !== false;
   const hasLidGroup = Boolean((group as ProductGroup & { _lids?: AddOnProduct[] })._lids?.length);
   const lidSelectionRequired = Boolean(selectedProduct) && !allowWithoutLid && hasLidGroup;
+
+  // Back button closes the sheet / image preview instead of leaving the page.
+  useCloseOnBack(isSheetOpen, () => setIsSheetOpen(false));
+  useCloseOnBack(isImagePreviewOpen, () => setIsImagePreviewOpen(false));
 
   useEffect(() => {
     if (!isImagePreviewOpen) return;
