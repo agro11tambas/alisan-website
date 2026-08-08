@@ -45,6 +45,8 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           optionName: opt.alias || erpProd.name,
           minimumOrder: Number(ecProduct.min_qty || 1),
           orderStep: Number(ecProduct.multiple_qty || 1),
+          // No group-image fallback: an option without its own photo must show
+          // no thumbnail rather than the whole product's photo.
           image: firstImageUrl(
             opt.image_url,
             opt.image,
@@ -52,7 +54,6 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
             erpProd.image,
             erpProd.thumbnail_url,
             erpProd.thumbnail,
-            imageUrl,
           ),
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
           allowWithoutLid: Boolean(opt.allow_without_lid ?? true),
@@ -90,7 +91,6 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
             erpProd.image,
             erpProd.thumbnail_url,
             erpProd.thumbnail,
-            imageUrl,
           ),
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
           erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
