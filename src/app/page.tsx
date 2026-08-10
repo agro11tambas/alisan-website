@@ -5,7 +5,8 @@ import { categoryService } from "@/services/categoryService";
 import FeaturedProductCarousel from "@/components/product/FeaturedProductCarousel";
 
 // Katalog jarang berubah, jadi halaman ini di-render ulang paling sering tiap 5
-// menit alih-alih tiap kunjungan.
+// menit alih-alih tiap kunjungan. Perubahan dari ERP tidak perlu menunggu selama
+// itu: ERP memanggil /api/revalidate begitu produk/category disimpan.
 export const revalidate = 300;
 
 export default async function Home() {
@@ -69,11 +70,6 @@ export default async function Home() {
                   <span className="line-clamp-2 text-[10px] font-medium leading-tight text-gray-700 transition-colors group-hover:text-primary md:text-xs">
                     {category.name}
                   </span>
-                  {category.children.length > 0 && (
-                    <span className="text-[9px] leading-none text-gray-400 md:text-[10px]">
-                      {category.children.length} sub
-                    </span>
-                  )}
                 </Link>
               ))}
             </div>

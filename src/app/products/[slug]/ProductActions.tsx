@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { ProductGroup, Product, AddOnProduct, ModePrice } from "@/types";
 import { useCartStore } from "@/stores/useCartStore";
@@ -16,6 +16,16 @@ interface ProductActionsProps {
   onImageChange?: (image: string, gallery?: string[]) => void;
 }
 
+type ProductCombination = {
+  id?: number | string;
+  product_option_id: number | string;
+  lid_option_id: number | string;
+  price?: number;
+  salePrice?: number;
+  image?: string;
+  modePrices?: ModePrice[];
+};
+
 export default function ProductActions({ group, onImageChange }: ProductActionsProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [lids, setLids] = useState<AddOnProduct[]>([]);
@@ -30,6 +40,67 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   const allowWithoutLid = selectedProduct?.allowWithoutLid !== false;
   const hasLidGroup = Boolean((group as ProductGroup & { _lids?: AddOnProduct[] })._lids?.length);
   const lidSelectionRequired = Boolean(selectedProduct) && !allowWithoutLid && hasLidGroup;
+
+  const combinations: ProductCombination[] =
+    (group as ProductGroup & { _combinations?: ProductCombination[] })._combinations || [];
+
+  // Mode dipilih lebih dulu, jadi daftarnya diambil dari gabungan seluruh opsi produk & kombinasi.
+  const groupModePrices: ModePrice[] = useMemo(() => {
+    const collected = new Map<string, ModePrice>();
+    const collect = (prices?: ModePrice[]) => {
+      (prices || []).forEach((price) => {
+        if (!collected.has(price.slug)) collected.set(price.slug, price);
+      });
+    };
+    group.products.forEach((p) => collect(p.modePrices));
+    ((group as ProductGroup & { _combinations?: ProductCombination[] })._combinations || [])
+      .forEach((c) => collect(c.modePrices));
+    return Array.from(collected.values()).sort((a, b) => a.priceModeId - b.priceModeId);
+  }, [group]);
+
+  const findCombination = (productId: string, lidId: string) =>
+    combinations.find(
+      (c) => String(c.product_option_id) === String(productId) && String(c.lid_option_id) === String(lidId),
+    );
+
+  const modePricesFor = (product: Product, lid: AddOnProduct | null) => {
+    const combination = lid ? findCombination(product.id, lid.id) : undefined;
+    return combination?.modePrices?.length ? combination.modePrices : (product.modePrices || []);
+  };
+
+  const productSupportsMode = (p: Product, modeSlug: string) =>
+    Boolean(p.modePrices?.some((price) => price.slug === modeSlug))
+    || combinations.some(
+      (c) => String(c.product_option_id) === String(p.id)
+        && (c.modePrices || []).some((price) => price.slug === modeSlug),
+    );
+
+  const productSelectionLocked = groupModePrices.length > 0 && !selectedMode;
+
+  const isProductDisabled = (p: Product) =>
+    p.stock === 0 || productSelectionLocked || Boolean(selectedMode && !productSupportsMode(p, selectedMode.slug));
+
+  // Kombinasi varian + tutup tertentu bisa saja tidak menyediakan mode yang sedang dipilih.
+  const lidOptionSupportsMode = (lid: AddOnProduct | null) => {
+    if (!selectedProduct || !selectedMode) return true;
+    return modePricesFor(selectedProduct, lid).some((price) => price.slug === selectedMode.slug);
+  };
+
+  const isLidDisabled = (lid: AddOnProduct) => lid.stock === 0 || !lidOptionSupportsMode(lid);
+
+  const getModePriceLabel = (mode: ModePrice) => {
+    if (selectedProduct) {
+      const match = availableModePrices.find((price) => price.slug === mode.slug);
+      return match ? `Rp ${match.price.toLocaleString("id-ID")}` : null;
+    }
+    const prices = [
+      ...group.products.flatMap((p) => p.modePrices || []),
+      ...combinations.flatMap((c) => c.modePrices || []),
+    ]
+      .filter((price) => price.slug === mode.slug)
+      .map((price) => price.price);
+    return prices.length ? `Mulai Rp ${Math.min(...prices).toLocaleString("id-ID")}` : null;
+  };
 
   // Back button closes the sheet / image preview instead of leaving the page.
   useCloseOnBack(isSheetOpen, () => setIsSheetOpen(false));
@@ -47,10 +118,6 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   }, [isImagePreviewOpen]);
 
   const handleAddToCartFromSheet = () => {
-    if (!selectedProduct) {
-      toast.error("Silakan pilih varian terlebih dahulu");
-      return;
-    }
     if (handleAddToCart()) setIsSheetOpen(false);
   };
 
@@ -89,12 +156,45 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     return null;
   };
 
+  const handleSelectMode = (mode: ModePrice) => {
+    setSelectedMode(mode);
+    if (!selectedProduct) return;
+
+    // Varian yang tidak punya mode ini tidak boleh tetap terpilih.
+    if (!productSupportsMode(selectedProduct, mode.slug)) {
+      setSelectedProduct(null);
+      setSelectedLid(null);
+      setQuantity(1);
+      if (onImageChange) {
+        onImageChange(
+          group.image || "/image/Placeholder.jpg",
+          group.gallery || [group.image || "/image/Placeholder.jpg"],
+        );
+      }
+      return;
+    }
+
+    // Varian tetap valid, tapi kombinasinya dengan tutup terpilih belum tentu punya mode ini.
+    if (selectedLid && !modePricesFor(selectedProduct, selectedLid).some((price) => price.slug === mode.slug)) {
+      setSelectedLid(null);
+      if (onImageChange) {
+        onImageChange(
+          selectedProduct.image || group.image || "/image/Placeholder.jpg",
+          selectedProduct.gallery || group.gallery || [group.image || "/image/Placeholder.jpg"],
+        );
+      }
+    }
+  };
+
   const handleSelect = (p: Product) => {
     setSelectedProduct(p);
-    setSelectedMode(null);
     setQuantity(p.minimumOrder || 1);
+    // Tutup yang kombinasinya tidak menyediakan mode terpilih ikut dilepas.
+    const keepLid = selectedLid && (!selectedMode
+      || modePricesFor(p, selectedLid).some((price) => price.slug === selectedMode.slug));
+    if (!keepLid) setSelectedLid(null);
     if (onImageChange) {
-      const comboImage = selectedLid ? getCombinationImage(p.id, selectedLid.id) : null;
+      const comboImage = keepLid && selectedLid ? getCombinationImage(p.id, selectedLid.id) : null;
       onImageChange(
         comboImage || p.image || group.image || "/image/Placeholder.jpg",
         p.gallery || group.gallery || [group.image || "/image/Placeholder.jpg"]
@@ -104,7 +204,6 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
   const handleSelectLid = (lid: AddOnProduct | null) => {
     setSelectedLid(lid);
-    setSelectedMode(null);
     if (selectedProduct) {
       const maxLidStock = lid ? lid.stock : Infinity;
       const finalMax = Math.min(selectedProduct.stock, maxLidStock);
@@ -141,7 +240,15 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
   };
 
   const handleAddToCart = () => {
-    if (!selectedProduct) return false;
+    if (!selectedMode) {
+      toast.error("Silakan pilih mode terlebih dahulu");
+      return false;
+    }
+
+    if (!selectedProduct) {
+      toast.error("Silakan pilih varian terlebih dahulu");
+      return false;
+    }
 
     if (lidSelectionRequired && !selectedLid) {
       toast.error("Silakan pilih tutup terlebih dahulu", {
@@ -158,12 +265,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       return false;
     }
 
-    if (!selectedMode) {
-      toast.error("Silakan pilih mode terlebih dahulu");
-      return false;
-    }
-
-    addItem(group, selectedProduct, quantity, selectedMode, displayPrice, selectedLid || undefined);
+    addItem(group, selectedProduct, quantity, selectedModePrice || selectedMode, displayPrice, selectedLid || undefined);
     toast.success("Berhasil Ditambahkan", {
       description: `${quantity.toLocaleString("id-ID")}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`
     });
@@ -238,25 +340,48 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
         </div>
       </div>
 
+      {/* Mode Options — dipilih paling awal */}
+      {groupModePrices.length > 0 && (
+        <div className="border-t-[6px] border-gray-100 md:border-t md:border-gray-100 pt-3 md:pt-3 pb-2 px-3 md:px-0">
+          <div className="flex justify-between items-center mb-2.5">
+            <h3 className="text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">Mode</h3>
+            {!selectedMode && <span className="text-[10px] font-semibold text-red-600">Wajib pilih mode</span>}
+          </div>
+          <div className="flex flex-wrap gap-2 pb-1">
+            {groupModePrices.map((mode) => {
+              const priceLabel = getModePriceLabel(mode);
+              return (
+                <button key={mode.slug} type="button" onClick={() => handleSelectMode(mode)}
+                  className={`h-9 md:h-8 px-4 md:px-3 text-sm md:text-xs font-medium rounded-md border transition-all ${selectedMode?.slug === mode.slug ? "border-primary text-primary bg-blue-50 ring-1 ring-primary" : "border-gray-300 text-gray-700 hover:border-primary/50"}`}>
+                  {mode.name}{priceLabel ? ` · ${priceLabel}` : ""}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Main Options */}
       <div className="border-t-[6px] border-gray-100 md:border-t md:border-gray-100 pt-3 md:pt-3 pb-2 px-3 md:px-0">
         <div className="flex justify-between items-center mb-2.5">
-          <h3 className="text-xs md:text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">{group.productGroupName || "Opsi Produk"}</h3>
-          <span className="text-[10px] text-gray-500 md:hidden">Pilih &gt;</span>
+          <h3 className={`text-xs md:text-xs font-bold md:font-semibold md:uppercase md:tracking-wide ${productSelectionLocked ? 'text-gray-400 md:text-gray-400' : 'text-gray-800 md:text-gray-500'}`}>{group.productGroupName || "Opsi Produk"}</h3>
+          {productSelectionLocked
+            ? <span className="text-[10px] font-semibold text-amber-600">Pilih mode dulu</span>
+            : <span className="text-[10px] text-gray-500 md:hidden">Pilih &gt;</span>}
         </div>
         <div className="flex flex-wrap gap-2 md:gap-2 pb-1">
           {group.products.map((p) => {
             const isSelected = selectedProduct?.id === p.id;
-            const isOutOfStock = p.stock === 0;
+            const isDisabled = isProductDisabled(p);
             return (
               <button
                 key={p.id}
-                onClick={() => !isOutOfStock && handleSelect(p)}
-                disabled={isOutOfStock}
+                onClick={() => !isDisabled && handleSelect(p)}
+                disabled={isDisabled}
                 className={`h-9 md:h-8 px-4 md:px-3 text-sm md:text-xs font-medium rounded-md border whitespace-nowrap shrink-0 transition-all duration-200 ${
-                  isSelected 
-                    ? 'border-primary text-primary bg-blue-50 ring-1 ring-primary' 
-                    : isOutOfStock
+                  isSelected
+                    ? 'border-primary text-primary bg-blue-50 ring-1 ring-primary'
+                    : isDisabled
                       ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
                       : 'border-gray-300 text-gray-700 hover:border-primary/50'
                 }`}
@@ -278,11 +403,14 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
           <div className="flex flex-wrap gap-2 md:gap-2 pb-1">
             {allowWithoutLid && (
             <button
-              onClick={() => handleSelectLid(null)}
+              onClick={() => lidOptionSupportsMode(null) && handleSelectLid(null)}
+              disabled={!lidOptionSupportsMode(null)}
               className={`h-9 md:h-8 px-4 md:px-3 text-sm md:text-xs font-medium rounded-md border whitespace-nowrap shrink-0 transition-all duration-200 ${
-                selectedLid === null 
-                  ? 'border-primary text-primary bg-blue-50 ring-1 ring-primary' 
-                  : 'border-gray-300 text-gray-700 hover:border-primary/50'
+                selectedLid === null
+                  ? 'border-primary text-primary bg-blue-50 ring-1 ring-primary'
+                  : !lidOptionSupportsMode(null)
+                    ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                    : 'border-gray-300 text-gray-700 hover:border-primary/50'
               }`}
             >
               Tanpa {group.lidGroupName || "Tutup"}
@@ -290,16 +418,16 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             )}
             {lids.map((lid) => {
               const isSelected = selectedLid?.id === lid.id;
-              const isOutOfStock = lid.stock === 0;
+              const isDisabled = isLidDisabled(lid);
               return (
                 <button
                   key={lid.id}
-                  onClick={() => !isOutOfStock && handleSelectLid(lid)}
-                  disabled={isOutOfStock}
+                  onClick={() => !isDisabled && handleSelectLid(lid)}
+                  disabled={isDisabled}
                   className={`h-9 md:h-8 px-4 md:px-3 text-sm md:text-xs font-medium rounded-md border whitespace-nowrap shrink-0 transition-all duration-200 ${
-                    isSelected 
-                      ? 'border-primary text-primary bg-blue-50 ring-1 ring-primary' 
-                      : isOutOfStock
+                    isSelected
+                      ? 'border-primary text-primary bg-blue-50 ring-1 ring-primary'
+                      : isDisabled
                         ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
                         : 'border-gray-300 text-gray-700 hover:border-primary/50'
                   }`}
@@ -314,22 +442,6 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
 
 
-      {selectedProduct && availableModePrices.length > 0 && (
-        <div className="border-t-[6px] border-gray-100 md:border-t md:border-gray-100 pt-3 md:pt-3 pb-2 px-3 md:px-0">
-          <div className="flex justify-between items-center mb-2.5">
-            <h3 className="text-xs font-bold md:font-semibold text-gray-800 md:text-gray-500 md:uppercase md:tracking-wide">Mode</h3>
-            {!selectedMode && <span className="text-[10px] font-semibold text-red-600">Wajib pilih mode</span>}
-          </div>
-          <div className="flex flex-wrap gap-2 pb-1">
-            {availableModePrices.map((mode) => (
-              <button key={mode.slug} type="button" onClick={() => setSelectedMode(mode)}
-                className={`h-9 md:h-8 px-4 md:px-3 text-sm md:text-xs font-medium rounded-md border transition-all ${selectedMode?.slug === mode.slug ? "border-primary text-primary bg-blue-50 ring-1 ring-primary" : "border-gray-300 text-gray-700 hover:border-primary/50"}`}>
-                {mode.name} · Rp {mode.price.toLocaleString("id-ID")}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
       {/* Selected Summary */}
       {selectedProduct && (
         <div className="border-t-[6px] border-gray-100 md:border-none mb-1.5 md:mb-3 bg-gray-50 md:bg-gray-50 p-2 md:px-3 md:py-2 mx-3 md:mx-0 rounded border border-gray-200 md:border-gray-100 text-xs mt-3 md:mt-0">
@@ -384,10 +496,12 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       </div>
 
       <div className="hidden md:block">
-        {!selectedProduct && (
+        {(!selectedMode || !selectedProduct) && (
           <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-md mb-3 text-xs font-medium border border-amber-200">
             <AlertCircle size={14} />
-            Silakan pilih varian terlebih dahulu.
+            {!selectedMode
+              ? "Silakan pilih mode terlebih dahulu."
+              : "Silakan pilih varian terlebih dahulu."}
           </div>
         )}
 
@@ -464,21 +578,49 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
           </SheetHeader>
           
           <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-3 py-4 space-y-6">
+            {groupModePrices.length > 0 && (
+              <div>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-[13px] font-medium uppercase text-gray-800">Mode</h3>
+                  {!selectedMode && (
+                    <span className="text-xs font-semibold text-red-600">Wajib pilih mode</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {groupModePrices.map((mode) => {
+                    const priceLabel = getModePriceLabel(mode);
+                    return (
+                      <button key={mode.slug} type="button" onClick={() => handleSelectMode(mode)}
+                        className={`min-h-[40px] w-full px-2 text-left text-[13px] font-medium rounded-sm border transition-all ${selectedMode?.slug === mode.slug ? "border-primary text-primary bg-primary/5 ring-1 ring-primary" : "border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50"}`}>
+                        <span className="block">{mode.name}</span>
+                        {priceLabel && <span className="block text-[11px]">{priceLabel}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div>
-              <h3 className="text-[13px] font-medium text-gray-800 mb-3 uppercase">{group.productGroupName || "Varian Cup"}</h3>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className={`text-[13px] font-medium uppercase ${productSelectionLocked ? 'text-gray-400' : 'text-gray-800'}`}>{group.productGroupName || "Varian Cup"}</h3>
+                {productSelectionLocked && (
+                  <span className="text-xs font-semibold text-amber-600">Pilih mode dulu</span>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {group.products.map((p) => {
                   const isSelected = selectedProduct?.id === p.id;
-                  const isOutOfStock = p.stock === 0;
+                  const isDisabled = isProductDisabled(p);
                   return (
                     <button
                       key={p.id}
-                      onClick={() => !isOutOfStock && handleSelect(p)}
-                      disabled={isOutOfStock}
+                      onClick={() => !isDisabled && handleSelect(p)}
+                      disabled={isDisabled}
                       className={`min-h-[36px] w-full min-w-0 py-1 px-2 flex items-center gap-2 text-left text-[13px] leading-tight font-medium rounded-sm border transition-all duration-200 ${
-                        isSelected 
-                          ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
-                          : isOutOfStock
+                        isSelected
+                          ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary'
+                          : isDisabled
                             ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
                             : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
                       }`}
@@ -498,11 +640,14 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                 <div className="grid grid-cols-2 gap-2">
                   {allowWithoutLid && (
                   <button
-                    onClick={() => handleSelectLid(null)}
+                    onClick={() => lidOptionSupportsMode(null) && handleSelectLid(null)}
+                    disabled={!lidOptionSupportsMode(null)}
                     className={`min-h-[36px] w-full min-w-0 py-1 px-2 text-left text-[13px] leading-tight font-medium rounded-sm border transition-all duration-200 ${
-                      selectedLid === null 
-                        ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
-                        : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
+                      selectedLid === null
+                        ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary'
+                        : !lidOptionSupportsMode(null)
+                          ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                          : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
                     }`}
                   >
                     Tanpa {group.lidGroupName || "Tutup"}
@@ -510,16 +655,16 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                   )}
                   {lids.map((lid) => {
                     const isSelected = selectedLid?.id === lid.id;
-                    const isOutOfStock = lid.stock === 0;
+                    const isDisabled = isLidDisabled(lid);
                     return (
                       <button
                         key={lid.id}
-                        onClick={() => !isOutOfStock && handleSelectLid(lid)}
-                        disabled={isOutOfStock}
+                        onClick={() => !isDisabled && handleSelectLid(lid)}
+                        disabled={isDisabled}
                         className={`min-h-[36px] w-full min-w-0 py-1 px-2 flex items-center gap-2 text-left text-[13px] leading-tight font-medium rounded-sm border transition-all duration-200 ${
-                          isSelected 
-                            ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary' 
-                            : isOutOfStock
+                          isSelected
+                            ? 'border-primary text-primary bg-primary/5 ring-1 ring-primary'
+                            : isDisabled
                               ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
                               : 'border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50'
                         }`}
@@ -533,25 +678,6 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
               </div>
             )}
 
-            {selectedProduct && availableModePrices.length > 0 && (
-              <div>
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h3 className="text-[13px] font-medium uppercase text-gray-800">Mode</h3>
-                  {!selectedMode && (
-                    <span className="text-xs font-semibold text-red-600">Wajib pilih mode</span>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {availableModePrices.map((mode) => (
-                    <button key={mode.slug} type="button" onClick={() => setSelectedMode(mode)}
-                      className={`min-h-[40px] w-full px-2 text-left text-[13px] font-medium rounded-sm border transition-all ${selectedMode?.slug === mode.slug ? "border-primary text-primary bg-primary/5 ring-1 ring-primary" : "border-gray-200 text-gray-700 bg-gray-50 hover:border-primary/50"}`}>
-                      <span className="block">{mode.name}</span>
-                      <span className="block text-[11px]">Rp {mode.price.toLocaleString("id-ID")}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="shrink-0 border-t border-gray-100 bg-white px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">

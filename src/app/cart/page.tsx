@@ -8,9 +8,19 @@ import { useEffect, useState } from "react";
 import { Discount, getActiveDiscounts } from "@/services/discountService";
 import { calculateDiscountAmount, calculateItemDiscounts } from "@/utils/discountUtils";
 import ProductImagePreview from "@/components/common/ProductImagePreview";
+import OrderList from "@/components/order/OrderList";
+
+type TabId = "cart" | "unverified" | "verified";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "cart", label: "Keranjang" },
+  { id: "unverified", label: "Pesanan Belum Diverifikasi" },
+  { id: "verified", label: "Pesanan Diverifikasi" },
+];
 
 export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>("cart");
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const cart = useCartStore();
@@ -29,7 +39,51 @@ export default function CartPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen pb-[calc(env(safe-area-inset-bottom)+80px)] lg:pb-8">
-      {cart.items.length === 0 ? (
+      {/* Tabs */}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="w-full sm:container sm:mx-auto sm:px-4">
+          <div
+            role="tablist"
+            aria-label="Keranjang dan pesanan"
+            className="flex gap-1 overflow-x-auto px-2 [scrollbar-width:none] sm:px-0 [&::-webkit-scrollbar]:hidden"
+          >
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative shrink-0 whitespace-nowrap px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${
+                    isActive ? "text-primary" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {tab.label}
+                  {tab.id === "cart" && cart.items.length > 0 && (
+                    <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                      {cart.items.length}
+                    </span>
+                  )}
+                  <span
+                    className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full ${
+                      isActive ? "bg-primary" : "bg-transparent"
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {activeTab !== "cart" ? (
+        <div className="w-full px-3 py-4 sm:container sm:mx-auto sm:px-4 sm:py-6">
+          <OrderList filter={activeTab} />
+        </div>
+      ) : cart.items.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center p-6 md:p-8 mt-4 md:mt-12">
           <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-3">
             <ShoppingBag size={32} />
@@ -237,7 +291,7 @@ export default function CartPage() {
       )}
 
       {/* Mobile Sticky Checkout Bar */}
-      {cart.items.length > 0 && (
+      {activeTab === "cart" && cart.items.length > 0 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+8px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-between h-11">
             <div className="flex flex-col justify-center">

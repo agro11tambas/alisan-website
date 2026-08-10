@@ -4,6 +4,12 @@ import ProductDetailClient from "./ProductDetailClient";
 import ProductMobileHeader from "./ProductMobileHeader";
 import Link from "next/link";
 
+// Halaman ini tidak memakai API dinamis, jadi hasil render-nya masuk cache dan
+// tanpa batas waktu bisa tertinggal sampai server di-deploy ulang. ERP sudah
+// memanggil /api/revalidate tiap produk berubah; angka ini cuma jaring pengaman
+// kalau ping itu gagal (website mati saat produk disimpan, secret salah, dll).
+export const revalidate = 3600;
+
 export default async function ProductDetailPage({
   params,
 }: {
