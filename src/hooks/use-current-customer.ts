@@ -14,6 +14,28 @@ type MeResponse = {
   data: Customer;
 };
 
+let currentCustomerRequest: Promise<Customer> | null = null;
+let currentCustomerToken: string | null = null;
+
+function requestCurrentCustomer(token: string): Promise<Customer> {
+  if (currentCustomerRequest && currentCustomerToken === token) {
+    return currentCustomerRequest;
+  }
+
+  currentCustomerToken = token;
+  const request = api
+    .get<MeResponse>("/ecommerce/auth/me")
+    .then((response) => response.data.data);
+
+  currentCustomerRequest = request;
+  const clearRequest = () => {
+    if (currentCustomerRequest === request) currentCustomerRequest = null;
+  };
+  void request.then(clearRequest, clearRequest);
+
+  return request;
+}
+
 export function useCurrentCustomer() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [hasToken, setHasToken] = useState(false);
@@ -34,9 +56,9 @@ export function useCurrentCustomer() {
     if (cachedCustomer) setCustomer(cachedCustomer);
 
     try {
-      const res = await api.get<MeResponse>("/ecommerce/auth/me");
-      setCustomer(res.data.data);
-      cacheCustomer(res.data.data);
+      const freshCustomer = await requestCurrentCustomer(token);
+      setCustomer(freshCustomer);
+      cacheCustomer(freshCustomer);
     } catch (error) {
       // A temporary network/API failure must not destroy a valid login session.
       // Keep both the bearer token and the last known customer profile.

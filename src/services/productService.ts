@@ -1,6 +1,27 @@
+import axios from "axios";
 import { api } from "./api";
 import { ProductGroup, AddOnProduct, Product, ModePrice } from "@/types";
 import { cache } from "react";
+
+const getCatalog = async (url: string) => {
+  try {
+    return await api.get(url);
+  } catch (error) {
+    if (!axios.isAxiosError(error) || error.response?.status !== 503) {
+      throw error;
+    }
+
+    // Backend memakai 503 singkat saat cache benar-benar dingin dan hanya satu
+    // worker sedang memanaskannya. Coba sekali lagi; jangan ubah kegagalan ini
+    // menjadi katalog kosong yang kemudian disimpan ISR selama beberapa menit.
+    const retryAfter = Number(error.response.headers["retry-after"] || 1);
+    const retrySeconds = Number.isFinite(retryAfter) ? retryAfter : 1;
+    const waitMs = Math.min(Math.max(retrySeconds, 1), 5) * 1000;
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+
+    return api.get(url);
+  }
+};
 
 const mapModePrices = (prices: any[] = []): ModePrice[] => prices.map((price: any) => ({
   priceModeId: Number(price.price_mode_id),
@@ -139,29 +160,33 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
 
 const fetchAllProductGroups = cache(async (): Promise<ProductGroup[]> => {
   try {
-    const response = await api.get("/ecommerce/products");
+    const response = await getCatalog("/ecommerce/products");
     if (response.data?.success && response.data?.data) {
       return mapBackendToFrontend(response.data.data);
     }
     return [];
   } catch (error) {
     console.error("Error fetching products:", error);
-    return [];
+    throw error;
   }
 });
 
 const fetchProductGroupBySlug = cache(
   async (slug: string): Promise<ProductGroup | undefined> => {
     try {
-      const response = await api.get(`/ecommerce/products/${slug}`);
+      const response = await getCatalog(`/ecommerce/products/${slug}`);
       if (response.data?.success && response.data?.data) {
         const mapped = mapBackendToFrontend([response.data.data]);
         return mapped[0];
       }
       return undefined;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return undefined;
+      }
+
       console.error("Error fetching product by slug:", error);
-      return undefined;
+      throw error;
     }
   },
 );

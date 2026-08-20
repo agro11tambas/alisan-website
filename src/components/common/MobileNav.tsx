@@ -27,6 +27,7 @@ import { Category } from "@/types";
 import CategoryThumb from "@/components/category/CategoryThumb";
 
 interface MobileNavProps {
+  isOpen: boolean;
   onClose: () => void;
 }
 
@@ -60,7 +61,7 @@ const NavLink = ({
   );
 };
 
-export default function MobileNav({ onClose }: MobileNavProps) {
+export default function MobileNav({ isOpen: menuOpen, onClose }: MobileNavProps) {
   const pathname = usePathname();
   const { customer, isLoggedIn } = useCurrentCustomer();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -68,8 +69,10 @@ export default function MobileNav({ onClose }: MobileNavProps) {
   const [openCategoryIds, setOpenCategoryIds] = useState<string[]>([]);
 
   useEffect(() => {
+    if (!menuOpen || categories.length > 0) return;
+
     categoryService.getCategoryTree().then(setCategories);
-  }, []);
+  }, [categories.length, menuOpen]);
 
   const toggleCategory = (id: string) =>
     setOpenCategoryIds((ids) =>

@@ -67,7 +67,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-[85vw] max-w-[400px] rounded-r-2xl border-none z-[100] [&>button]:hidden">
                 <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
-                <MobileNav onClose={() => setIsMobileMenuOpen(false)} />
+                <MobileNav isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
               </SheetContent>
             </Sheet>
 

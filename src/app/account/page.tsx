@@ -31,8 +31,6 @@ const passwordSchema = z.object({
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function SettingsPage() {
-  const [isLoading, setIsLoading] = useState(true);
-
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -41,7 +39,7 @@ export default function SettingsPage() {
   const [expandedBusinessId, setExpandedBusinessId] = useState<number | null>(null);
 
   const router = useRouter();
-  const { customer } = useCurrentCustomer();
+  const { customer, loading: customerLoading, isLoggedIn } = useCurrentCustomer();
 
   const {
     register,
@@ -59,32 +57,18 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    let isActive = true;
+    if (customerLoading) return;
 
-    const profileRequest = window.setTimeout(async () => {
-      try {
-        const response = await api.get("/ecommerce/auth/me");
-        if (isActive && response.data.success && response.data.data) {
-          reset({
-            name: response.data.data.name || "",
-            whatsapp_number: response.data.data.whatsapp_number || "",
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch profile:", error);
-        router.push("/login");
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
-      }
-    }, 0);
+    if (!isLoggedIn || !customer) {
+      router.replace("/login");
+      return;
+    }
 
-    return () => {
-      isActive = false;
-      window.clearTimeout(profileRequest);
-    };
-  }, [reset, router]);
+    reset({
+      name: customer.name || "",
+      whatsapp_number: customer.whatsapp_number || "",
+    });
+  }, [customer, customerLoading, isLoggedIn, reset, router]);
 
 
   const handleChangePassword = async (data: PasswordFormValues) => {
@@ -145,7 +129,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (isLoading) {
+  if (customerLoading || !customer) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
