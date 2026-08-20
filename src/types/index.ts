@@ -2,7 +2,8 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
-  image: string;
+  /** Foto kategori dari ERP; kosong bila kategori belum punya gambar. */
+  image?: string;
   icon?: string;
   description?: string;
   parentId?: string;

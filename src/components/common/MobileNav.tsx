@@ -24,6 +24,7 @@ import {
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
 import { categoryService } from "@/services/categoryService";
 import { Category } from "@/types";
+import CategoryThumb from "@/components/category/CategoryThumb";
 
 interface MobileNavProps {
   onClose: () => void;
@@ -126,9 +127,16 @@ export default function MobileNav({ onClose }: MobileNavProps) {
                         <Link
                           href={`/products?category=${cat.slug}`}
                           onClick={onClose}
-                          className="flex flex-1 items-center h-11 pl-[52px] pr-2 text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors"
+                          className="flex flex-1 items-center gap-2 h-11 pl-4 pr-2 text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors"
                         >
-                          {cat.name}
+                          {/* Foto hanya untuk kategori induk; subkategori tetap teks saja. */}
+                          <CategoryThumb
+                            name={cat.name}
+                            image={cat.image}
+                            className="size-7 text-[11px]"
+                            sizes="28px"
+                          />
+                          <span className="min-w-0 flex-1 truncate">{cat.name}</span>
                         </Link>
 
                         {hasChildren && (

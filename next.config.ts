@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
     // mengecilkannya ke ukuran tampil sebenarnya dan mengubahnya ke WebP, jadi
     // `unoptimized` tidak boleh dinyalakan lagi.
     formats: ["image/webp"],
+    // ERP lokal (alisan_code.test / Laragon) memetakan ke 127.0.0.1, dan sejak
+    // Next 16 optimizer menolak host yang resolve ke IP privat. Hanya dibuka di
+    // dev; di produksi gambar datang dari erpalisan.com yang publik.
+    dangerouslyAllowLocalIP: process.env.NODE_ENV !== "production",
     qualities: [75],
     minimumCacheTTL: 2678400, // 31 hari; gambar produk jarang berubah
     remotePatterns: [
@@ -16,9 +20,19 @@ const nextConfig: NextConfig = {
         pathname: '/uploads/**',
       },
       {
+        protocol: 'https',
+        hostname: 'erpalisan.com',
+        pathname: '/storage/**',
+      },
+      {
         protocol: 'http',
         hostname: 'alisan_code.test',
         pathname: '/uploads/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'alisan_code.test',
+        pathname: '/storage/**',
       },
       {
         protocol: 'http',

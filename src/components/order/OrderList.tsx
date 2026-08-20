@@ -11,16 +11,39 @@ import {
   ReceiptText,
 } from "lucide-react";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
-import { orderService, type SaleOrder } from "@/services/orderService";
+import { orderService, type OrderStage, type SaleOrder } from "@/services/orderService";
 
-export type OrderFilter = "all" | "verified" | "unverified";
+export type OrderFilter = "all" | OrderStage;
 
 const PER_PAGE = 10;
 const FETCH_CHUNK = 100;
 const MAX_CHUNKS = 10;
 
-export const isOrderVerified = (order: SaleOrder) =>
-  order.order_number.trim().toUpperCase().startsWith("INV");
+/**
+ * Tahapnya dihitung backend dari waiting list dan delivery. Kalau field-nya
+ * belum ada (respons lama), pesanan dianggap sudah diverifikasi begitu nomornya
+ * berubah dari SO menjadi INV.
+ */
+export const getOrderStage = (order: SaleOrder): OrderStage =>
+  order.fulfillment?.stage ??
+  (order.order_number.trim().toUpperCase().startsWith("INV")
+    ? "processing"
+    : "waiting_verification");
+
+const stageBadge: Record<OrderStage, { label: string; className: string }> = {
+  waiting_verification: {
+    label: "Menunggu Verifikasi",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+  },
+  processing: {
+    label: "Diproses",
+    className: "border-blue-200 bg-blue-50 text-blue-700",
+  },
+  completed: {
+    label: "Selesai",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  },
+};
 
 const formatCurrency = (value: number) => `Rp ${value.toLocaleString("id-ID")}`;
 
@@ -48,19 +71,23 @@ const emptyStateText: Record<OrderFilter, { title: string; description: string }
     title: "Belum ada pesanan",
     description: "Produk yang dipesan melalui website akan muncul di sini.",
   },
-  unverified: {
+  waiting_verification: {
     title: "Belum ada pesanan yang menunggu verifikasi",
     description: "Pesanan baru akan muncul di sini sampai diverifikasi admin.",
   },
-  verified: {
-    title: "Belum ada pesanan yang diverifikasi",
-    description: "Pesanan yang sudah diverifikasi admin akan muncul di sini.",
+  processing: {
+    title: "Belum ada pesanan yang diproses",
+    description: "Pesanan yang sedang dikerjakan atau diantar akan muncul di sini.",
+  },
+  completed: {
+    title: "Belum ada pesanan yang selesai",
+    description: "Pesanan yang seluruh barangnya sudah diantar akan muncul di sini.",
   },
 };
 
 export function OrderCard({ order }: { order: SaleOrder }) {
   const paymentStatus = order.payment_status ?? "Unpaid";
-  const isVerified = isOrderVerified(order);
+  const badge = stageBadge[getOrderStage(order)];
 
   return (
     <article className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm md:hidden">
@@ -70,12 +97,9 @@ export function OrderCard({ order }: { order: SaleOrder }) {
           <p className="mt-0.5 text-xs text-gray-500">{formatDate(order.order_date)}</p>
         </div>
         <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${isVerified
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-            : "border-amber-200 bg-amber-50 text-amber-700"
-          }`}
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${badge.className}`}
         >
-          {isVerified ? "Sudah Diverifikasi" : "Belum Diverifikasi"}
+          {badge.label}
         </span>
       </header>
 
@@ -145,7 +169,7 @@ export function OrderCard({ order }: { order: SaleOrder }) {
 
 export function DesktopOrderCard({ order }: { order: SaleOrder }) {
   const paymentStatus = order.payment_status ?? "Unpaid";
-  const isVerified = isOrderVerified(order);
+  const badge = stageBadge[getOrderStage(order)];
 
   return (
     <article className="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
@@ -160,13 +184,8 @@ export function DesktopOrderCard({ order }: { order: SaleOrder }) {
             <p className="mt-1 text-sm font-medium text-gray-700">{formatDate(order.order_date)}</p>
           </div>
         </div>
-        <span
-          className={`rounded-full border px-3 py-1.5 text-xs font-bold ${isVerified
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-            : "border-amber-200 bg-amber-50 text-amber-700"
-          }`}
-        >
-          {isVerified ? "Sudah Diverifikasi" : "Belum Diverifikasi"}
+        <span className={`rounded-full border px-3 py-1.5 text-xs font-bold ${badge.className}`}>
+          {badge.label}
         </span>
       </header>
 
@@ -321,9 +340,8 @@ export default function OrderList({
   }, [customerLoading, isLoggedIn, retryKey]);
 
   const filteredOrders = useMemo(() => {
-    if (filter === "verified") return orders.filter(isOrderVerified);
-    if (filter === "unverified") return orders.filter((order) => !isOrderVerified(order));
-    return orders;
+    if (filter === "all") return orders;
+    return orders.filter((order) => getOrderStage(order) === filter);
   }, [orders, filter]);
 
   const lastPage = Math.max(1, Math.ceil(filteredOrders.length / PER_PAGE));

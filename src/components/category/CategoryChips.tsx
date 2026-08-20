@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Category } from "@/types";
+import CategoryThumb from "./CategoryThumb";
+import { cn } from "@/lib/utils";
 
 interface CategoryChipsProps {
   /** Top-level categories, each carrying its nested children. */
@@ -35,18 +37,28 @@ export default function CategoryChips({
           <Link href="/products" className={chipClass(activeId ? "idle" : "active")}>
             Semua
           </Link>
+          {/* Foto hanya untuk kategori induk; chip subkategori tetap teks saja. */}
           {categories.map((category) => (
             <Link
               key={category.id}
               href={`/products?category=${category.slug}`}
-              className={chipClass(
-                activeId === category.id
-                  ? "active"
-                  : activeRoot?.id === category.id
-                    ? "branch"
-                    : "idle",
+              className={cn(
+                chipClass(
+                  activeId === category.id
+                    ? "active"
+                    : activeRoot?.id === category.id
+                      ? "branch"
+                      : "idle",
+                ),
+                "gap-1.5 pl-1",
               )}
             >
+              <CategoryThumb
+                name={category.name}
+                image={category.image}
+                className="size-5 text-[9px]"
+                sizes="20px"
+              />
               {category.name}
             </Link>
           ))}

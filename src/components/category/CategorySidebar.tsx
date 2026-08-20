@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Category } from "@/types";
+import CategoryThumb from "./CategoryThumb";
 
 interface CategorySidebarProps {
   /** Top-level categories, each carrying its nested children. */
@@ -56,13 +57,20 @@ export default function CategorySidebar({
                 <div className="flex items-center gap-1">
                   <Link
                     href={`/products?category=${category.slug}`}
-                    className={`flex-1 rounded-md px-2 py-1.5 text-sm transition-colors ${
+                    className={`flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
                       isActive
                         ? "bg-primary/10 font-semibold text-primary"
                         : "text-gray-700 hover:bg-gray-50 hover:text-primary"
                     }`}
                   >
-                    {category.name}
+                    {/* Foto hanya untuk kategori induk; subkategori tetap teks saja. */}
+                    <CategoryThumb
+                      name={category.name}
+                      image={category.image}
+                      className="size-7 text-[11px]"
+                      sizes="28px"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-left">{category.name}</span>
                   </Link>
 
                   {hasChildren && (

@@ -1,18 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Building2, ExternalLink, MapPin, Phone } from "lucide-react";
+import { toast } from "sonner";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
+import api from "@/services/api";
 
 export default function AddressesPage() {
   const router = useRouter();
-  const { customer, loading, isLoggedIn } = useCurrentCustomer();
+  const { customer, loading, isLoggedIn, refreshCustomer } = useCurrentCustomer();
+  const [savingAddressId, setSavingAddressId] = useState<string | number | null>(null);
 
   useEffect(() => {
     if (!loading && !isLoggedIn) router.replace("/login");
   }, [isLoggedIn, loading, router]);
+
+  const handleSetDefault = async (addressId: string | number) => {
+    setSavingAddressId(addressId);
+
+    try {
+      await api.put(`/ecommerce/auth/addresses/${addressId}/default`);
+      await refreshCustomer();
+      toast.success("Alamat utama berhasil diperbarui.");
+    } catch (error) {
+      console.error("Gagal mengubah alamat utama:", error);
+      toast.error("Gagal mengubah alamat utama. Coba lagi.");
+    } finally {
+      setSavingAddressId(null);
+    }
+  };
 
   if (loading || !isLoggedIn) {
     return (
@@ -107,17 +125,31 @@ export default function AddressesPage() {
                             <p className="text-sm leading-relaxed text-gray-600">
                               {fullAddress}
                             </p>
-                            {mapsLink && (
-                              <a
-                                href={mapsLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
-                              >
-                                Lihat di Google Maps
-                                <ExternalLink size={12} />
-                              </a>
-                            )}
+                            <div className="mt-2 flex flex-wrap items-center gap-3">
+                              {mapsLink && (
+                                <a
+                                  href={mapsLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                                >
+                                  Lihat di Google Maps
+                                  <ExternalLink size={12} />
+                                </a>
+                              )}
+                              {!isDefault && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetDefault(address.id)}
+                                  disabled={savingAddressId !== null}
+                                  className="inline-flex items-center rounded-md border border-primary/30 px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {savingAddressId === address.id
+                                    ? "Menyimpan..."
+                                    : "Jadikan Alamat Utama"}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </article>
                       );
@@ -128,7 +160,8 @@ export default function AddressesPage() {
             })}
 
             <p className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-center text-xs text-gray-500">
-              Alamat hanya dapat dilihat. Hubungi admin untuk melakukan perubahan.
+              Alamat utama dapat kamu atur sendiri di sini. Untuk menambah atau mengubah
+              isi alamat, hubungi admin.
             </p>
           </div>
         )}

@@ -34,6 +34,16 @@ export interface SaleOrderItem {
   total_after_discount: number;
 }
 
+export type OrderStage = "waiting_verification" | "processing" | "completed";
+
+export interface SaleOrderFulfillment {
+  stage: OrderStage;
+  is_verified: boolean;
+  has_production_assign: boolean;
+  is_on_delivery: boolean;
+  is_fully_delivered: boolean;
+}
+
 export interface SaleOrder {
   id: number;
   order_number: string;
@@ -48,6 +58,7 @@ export interface SaleOrder {
   remaining_amount: number;
   mode: string;
   notes: string | null;
+  fulfillment?: SaleOrderFulfillment;
   customer: { id: number | null; name: string | null };
   shipping: {
     address_id: number | null;

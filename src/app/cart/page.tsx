@@ -10,12 +10,13 @@ import { calculateDiscountAmount, calculateItemDiscounts } from "@/utils/discoun
 import ProductImagePreview from "@/components/common/ProductImagePreview";
 import OrderList from "@/components/order/OrderList";
 
-type TabId = "cart" | "unverified" | "verified";
+type TabId = "cart" | "waiting_verification" | "processing" | "completed";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "cart", label: "Keranjang" },
-  { id: "unverified", label: "Pesanan Belum Diverifikasi" },
-  { id: "verified", label: "Pesanan Diverifikasi" },
+  { id: "waiting_verification", label: "Menunggu Verifikasi" },
+  { id: "processing", label: "Diproses" },
+  { id: "completed", label: "Selesai" },
 ];
 
 export default function CartPage() {

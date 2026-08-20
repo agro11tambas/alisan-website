@@ -3,6 +3,7 @@ import Link from "next/link";
 import { productService } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
 import FeaturedProductCarousel from "@/components/product/FeaturedProductCarousel";
+import CategoryThumb from "@/components/category/CategoryThumb";
 
 // Katalog jarang berubah, jadi halaman ini di-render ulang paling sering tiap 5
 // menit alih-alih tiap kunjungan. Perubahan dari ERP tidak perlu menunggu selama
@@ -61,12 +62,12 @@ export default async function Home() {
                   href={`/products?category=${category.slug}`}
                   className="group flex min-h-20 flex-[0_0_23%] snap-start flex-col items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-1 py-2 text-center transition-colors hover:bg-blue-50 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary md:min-h-28 md:flex-none md:gap-2.5 md:px-2 md:py-3"
                 >
-                  <span
-                    aria-hidden="true"
-                    className="grid size-8 place-items-center rounded-full bg-blue-50 text-xs font-bold uppercase text-primary transition-colors group-hover:bg-primary group-hover:text-white md:size-12 md:text-base"
-                  >
-                    {category.name.trim().charAt(0)}
-                  </span>
+                  <CategoryThumb
+                    name={category.name}
+                    image={category.image}
+                    className="size-8 text-xs transition-colors group-hover:bg-primary group-hover:text-white md:size-12 md:text-base"
+                    sizes="(max-width: 768px) 32px, 48px"
+                  />
                   <span className="line-clamp-2 text-[10px] font-medium leading-tight text-gray-700 transition-colors group-hover:text-primary md:text-xs">
                     {category.name}
                   </span>

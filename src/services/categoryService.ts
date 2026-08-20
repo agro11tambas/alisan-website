@@ -1,6 +1,14 @@
 import { api } from "./api";
 import { Category } from "@/types";
 
+const firstImageUrl = (...candidates: unknown[]): string | undefined => {
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+  }
+
+  return undefined;
+};
+
 type FlatCategory = Omit<Category, "children"> & { children: Category[] };
 
 const byOrderThenName = (a: Category, b: Category) =>
@@ -38,7 +46,10 @@ const fetchCategories = async (): Promise<Category[]> => {
           id: String(c.id),
           name: c.name,
           slug: c.slug,
-          image: c.image_url || c.image || "/image/Placeholder.jpg",
+          // Tanpa fallback placeholder: kategori tanpa foto tampil sebagai inisial.
+          // `image` dulu: di ERP `image_url` menunjuk /uploads yang 404, sedangkan
+          // `image` menunjuk /storage yang benar-benar dilayani (sama seperti produk).
+          image: firstImageUrl(c.image, c.image_url),
           icon: c.icon,
           description: c.description || undefined,
           parentId: c.parent_id != null ? String(c.parent_id) : undefined,
