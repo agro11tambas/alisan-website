@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,6 +19,11 @@ export type OrderFilter = "all" | OrderStage;
 const PER_PAGE = 10;
 const FETCH_CHUNK = 100;
 const MAX_CHUNKS = 10;
+/**
+ * Jeda pengecekan status pesanan. Endpoint sync hanya membaca beberapa kolom
+ * kunci, jadi cukup murah untuk dipanggil setiap beberapa detik.
+ */
+const SYNC_INTERVAL_MS = 8000;
 
 /**
  * Tahapnya dihitung backend dari waiting list dan delivery. Kalau field-nya
@@ -85,6 +91,23 @@ const emptyStateText: Record<OrderFilter, { title: string; description: string }
   },
 };
 
+/** Foto produk seperti di keranjang; ikon paket dipakai kalau fotonya belum ada. */
+function OrderItemImage({ src, alt }: { src: string | null; alt: string }) {
+  if (!src) {
+    return (
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Package size={20} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
+      <Image src={src} alt={alt} fill sizes="48px" className="object-cover" />
+    </div>
+  );
+}
+
 export function OrderCard({ order }: { order: SaleOrder }) {
   const paymentStatus = order.payment_status ?? "Unpaid";
   const badge = stageBadge[getOrderStage(order)];
@@ -106,9 +129,7 @@ export function OrderCard({ order }: { order: SaleOrder }) {
       <div className="divide-y divide-gray-100">
         {order.items.map((item) => (
           <div key={item.id} className="flex items-start gap-3 px-4 py-3.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Package size={18} />
-            </div>
+            <OrderItemImage src={item.image_url} alt={item.product_name} />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold leading-snug text-gray-900">{item.product_name}</p>
               <p className="mt-1 text-xs text-gray-500">
@@ -205,9 +226,7 @@ export function DesktopOrderCard({ order }: { order: SaleOrder }) {
               <tr key={item.id} className="text-sm text-gray-700">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Package size={18} />
-                    </div>
+                    <OrderItemImage src={item.image_url} alt={item.product_name} />
                     <span className="font-semibold text-gray-900">{item.product_name}</span>
                   </div>
                 </td>
@@ -293,6 +312,20 @@ async function fetchAllOrders() {
   return restChunks.reduce((all, chunk) => all.concat(chunk.data), firstChunk.data);
 }
 
+/**
+ * Sidik jari status pesanan terkini. Mengembalikan null kalau backend belum
+ * punya endpoint sync, supaya halaman tetap jalan seperti sebelumnya.
+ */
+async function readSyncVersion() {
+  try {
+    const state = await orderService.getOrdersSync();
+
+    return state?.version ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default function OrderList({
   filter = "all",
   onTotalChange,
@@ -306,6 +339,10 @@ export default function OrderList({
   const [retryKey, setRetryKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  /** Sidik jari status pesanan yang sudah tercermin di `orders`. */
+  const syncVersionRef = useRef<string | null>(null);
+  /** Penjaga supaya pengecekan yang lambat tidak ditumpuk oleh interval. */
+  const isCheckingRef = useRef(false);
 
   useEffect(() => {
     if (customerLoading) return;
@@ -322,6 +359,11 @@ export default function OrderList({
       setError("");
 
       try {
+        // Sidik jari diambil lebih dulu supaya perubahan yang terjadi di
+        // sela-sela pengambilan daftar tidak ikut ter-"tandai" sudah dibaca:
+        // paling buruk polling berikutnya menyegarkan sekali lagi.
+        syncVersionRef.current = await readSyncVersion();
+
         const result = await fetchAllOrders();
         if (!isActive) return;
         setOrders(result);
@@ -336,6 +378,77 @@ export default function OrderList({
     return () => {
       isActive = false;
       window.clearTimeout(request);
+    };
+  }, [customerLoading, isLoggedIn, retryKey]);
+
+  /**
+   * Pesanan bisa berubah tahap kapan saja dari sisi admin (Mark as Sale List,
+   * assign produksi, surat jalan selesai). Halaman ini menanyakan sidik jari
+   * status tiap beberapa detik dan baru mengambil ulang daftar lengkap kalau
+   * sidik jarinya berubah, jadi kartu pesanan pindah tab dengan sendirinya
+   * tanpa perlu di-refresh.
+   *
+   * Polling berhenti saat tab tidak terlihat, lalu langsung mengecek sekali
+   * begitu tab dibuka lagi.
+   */
+  useEffect(() => {
+    if (customerLoading || !isLoggedIn) return;
+
+    let isActive = true;
+    let timer: number | undefined;
+
+    const refreshOrders = async () => {
+      const result = await fetchAllOrders();
+      if (isActive) setOrders(result);
+    };
+
+    const checkForUpdates = async () => {
+      if (!isActive || isCheckingRef.current || document.hidden) return;
+
+      isCheckingRef.current = true;
+
+      try {
+        const version = await readSyncVersion();
+
+        if (version && version !== syncVersionRef.current) {
+          // Disegarkan diam-diam: tanpa spinner, supaya daftar yang sedang
+          // dibaca customer tidak berkedip tiap ada perubahan.
+          await refreshOrders();
+          syncVersionRef.current = version;
+        }
+      } catch (syncError) {
+        // Jaringan putus sesaat bukan alasan menampilkan error: percobaan
+        // berikutnya jalan beberapa detik lagi.
+        console.error("Gagal menyinkronkan status pesanan:", syncError);
+      } finally {
+        isCheckingRef.current = false;
+      }
+    };
+
+    const start = () => {
+      window.clearInterval(timer);
+      timer = window.setInterval(checkForUpdates, SYNC_INTERVAL_MS);
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        window.clearInterval(timer);
+        return;
+      }
+
+      void checkForUpdates();
+      start();
+    };
+
+    start();
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", checkForUpdates);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", checkForUpdates);
     };
   }, [customerLoading, isLoggedIn, retryKey]);
 

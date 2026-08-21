@@ -53,11 +53,11 @@ export default function FloatingWhatsAppButton({ initialPhoneNumber = "628123456
       >
         <Link
           href="/cart"
-          aria-label="Keranjang"
+          aria-label="Pesanan"
           className="relative flex items-center justify-center gap-1.5 px-3 h-[38px] md:h-[42px] bg-primary text-white rounded-full shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300 pointer-events-auto"
         >
           <ShoppingCart size={18} className="md:w-5 md:h-5" />
-          <span className="font-semibold text-xs md:text-sm">Keranjang</span>
+          <span className="font-semibold text-xs md:text-sm">Pesanan</span>
           {isMounted && cartCount > 0 && (
             <Badge className="absolute -top-1 -right-1 px-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] border-2 border-white">
               {cartCount}

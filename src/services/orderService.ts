@@ -26,6 +26,8 @@ export interface SaleOrderItem {
   id: number;
   product_id: number | null;
   product_name: string;
+  /** Foto dari katalog ecommerce; null kalau produknya belum punya foto. */
+  image_url: string | null;
   unit_name: string | null;
   quantity: number;
   mode: string;
@@ -84,6 +86,32 @@ interface SaleOrderListResponse {
   message: string;
   data: SaleOrderPagination;
 }
+
+/**
+ * Ringkasan status pesanan yang dipakai untuk polling. Isinya sengaja ringan:
+ * selama `version` sama dengan yang terakhir dipakai, daftar pesanan lengkap
+ * tidak perlu diambil ulang.
+ */
+export interface SaleOrderSyncEntry {
+  id: number;
+  order_number: string;
+  status: string;
+  is_verified: boolean;
+  updated_at: string | null;
+}
+
+export interface SaleOrderSyncState {
+  version: string;
+  server_time: string;
+  orders: SaleOrderSyncEntry[];
+}
+
+interface SaleOrderSyncResponse {
+  success: boolean;
+  message: string;
+  data: SaleOrderSyncState;
+}
+
 export const orderService = {
   createOrder: async (payload: CreateOrderPayload) => {
     return api.post("/ecommerce/sale-orders", payload);
@@ -92,6 +120,12 @@ export const orderService = {
     const response = await api.get<SaleOrderListResponse>("/ecommerce/sale-orders", {
       params: { page, per_page: perPage },
     });
+
+    return response.data.data;
+  },
+  /** Sidik jari status pesanan; dipanggil berkala untuk mendeteksi perubahan. */
+  getOrdersSync: async () => {
+    const response = await api.get<SaleOrderSyncResponse>("/ecommerce/sale-orders/sync");
 
     return response.data.data;
   },
