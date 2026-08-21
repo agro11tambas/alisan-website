@@ -1,6 +1,6 @@
 "use client";
 
-import { useCartStore } from "@/stores/useCartStore";
+import { useCartHydrated, useCartStore } from "@/stores/useCartStore";
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2, ShoppingBag, ZoomIn } from "lucide-react";
@@ -20,11 +20,11 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 export default function CartPage() {
-  const [isMounted, setIsMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("cart");
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const cart = useCartStore();
+  const isCartHydrated = useCartHydrated();
   const selectedItems = cart.items.filter(i => i.isSelected !== false);
   const itemDiscounts = calculateItemDiscounts(selectedItems, discounts);
   const discountAmount = calculateDiscountAmount(selectedItems, discounts);
@@ -32,11 +32,10 @@ export default function CartPage() {
   const isAllSelected = cart.items.length > 0 && cart.items.every(i => i.isSelected !== false);
 
   useEffect(() => {
-    setIsMounted(true);
     getActiveDiscounts().then(setDiscounts);
   }, []);
 
-  if (!isMounted) return null;
+  if (!isCartHydrated) return null;
 
   return (
     <div className="bg-gray-50 min-h-screen pb-[calc(env(safe-area-inset-bottom)+80px)] lg:pb-8">

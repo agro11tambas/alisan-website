@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { CartItem } from "@/types";
 import { cartService } from "@/services/cartService";
 import { productService } from "@/services/productService";
-import { useCartStore } from "@/stores/useCartStore";
+import { useCartStore, waitForCartHydration } from "@/stores/useCartStore";
 import { CUSTOMER_AUTH_CHANGED_EVENT } from "@/lib/customer-auth-events";
 import { getCartItemImage } from "@/utils/productImageUtils";
 
@@ -85,6 +85,12 @@ export default function CartSync() {
     };
 
     const hydrateCart = async () => {
+      await waitForCartHydration();
+
+      if (disposed) {
+        return;
+      }
+
       const token = localStorage.getItem("customer_token");
 
       if (!token) {

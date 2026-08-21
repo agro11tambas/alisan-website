@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useSyncExternalStore } from 'react';
 import { CartItem, Product, ProductGroup, AddOnProduct, ModePrice } from '@/types';
 import { findProductCombination, getSelectedProductImage } from '@/utils/productImageUtils';
 
@@ -132,13 +133,52 @@ export const useCartStore = create<CartState>()(
     {
       name: 'alisan-cart-storage',
       version: 7,
-      migrate: (persistedState: any, version: number) => {
+      migrate: (persistedState: unknown, version: number) => {
+        const previousItems =
+          typeof persistedState === 'object'
+          && persistedState !== null
+          && 'items' in persistedState
+          && Array.isArray(persistedState.items)
+            ? persistedState.items as CartItem[]
+            : [];
+
         if (version !== 7) {
-          const previousItems = Array.isArray(persistedState?.items) ? persistedState.items : [];
           return { items: previousItems.filter((item: CartItem) => item.type !== 'bundle') };
         }
-        return persistedState;
+        return { items: previousItems };
       },
     },
   ),
 );
+
+/**
+ * Persisted state is unavailable while the page is rendered on the server.
+ * Expose Zustand's actual hydration state so cart screens do not guess that
+ * localStorage is ready based on an unrelated component mount.
+ */
+export function useCartHydrated() {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const unsubscribeHydrate = useCartStore.persist.onHydrate(onStoreChange);
+      const unsubscribeFinish = useCartStore.persist.onFinishHydration(onStoreChange);
+
+      return () => {
+        unsubscribeHydrate();
+        unsubscribeFinish();
+      };
+    },
+    () => useCartStore.persist.hasHydrated(),
+    () => false,
+  );
+}
+
+export function waitForCartHydration() {
+  if (useCartStore.persist.hasHydrated()) return Promise.resolve();
+
+  return new Promise<void>((resolve) => {
+    const unsubscribe = useCartStore.persist.onFinishHydration(() => {
+      unsubscribe();
+      resolve();
+    });
+  });
+}
