@@ -9,7 +9,31 @@ const firstImageUrl = (...candidates: unknown[]): string | undefined => {
   return undefined;
 };
 
+const categoryImageUrl = (...candidates: unknown[]): string | undefined => {
+  const image = firstImageUrl(...candidates);
+
+  if (!image) return undefined;
+
+  return image
+    .replace("/storage/ecommerce-products/", "/uploads/ecommerce-categories/")
+    .replace("/uploads/ecommerce-products/", "/uploads/ecommerce-categories/")
+    .replace(/^ecommerce-products\//, "/uploads/ecommerce-categories/");
+};
+
 type FlatCategory = Omit<Category, "children"> & { children: Category[] };
+
+type ApiCategory = {
+  id: string | number;
+  name: string;
+  slug: string;
+  image?: unknown;
+  image_url?: unknown;
+  icon?: string;
+  description?: string | null;
+  parent_id?: string | number | null;
+  sort_order?: string | number;
+  is_active?: boolean;
+};
 
 const byOrderThenName = (a: Category, b: Category) =>
   a.sortOrder - b.sortOrder || a.name.localeCompare(b.name);
@@ -41,15 +65,13 @@ const fetchCategories = async (): Promise<Category[]> => {
     const response = await api.get("/ecommerce/categories");
     if (response.data?.success && response.data?.data) {
       const flat: FlatCategory[] = response.data.data
-        .filter((c: any) => c.is_active !== false)
-        .map((c: any) => ({
+        .filter((c: ApiCategory) => c.is_active !== false)
+        .map((c: ApiCategory) => ({
           id: String(c.id),
           name: c.name,
           slug: c.slug,
-          // Tanpa fallback placeholder: kategori tanpa foto tampil sebagai inisial.
-          // `image` dulu: di ERP `image_url` menunjuk /uploads yang 404, sedangkan
-          // `image` menunjuk /storage yang benar-benar dilayani (sama seperti produk).
-          image: firstImageUrl(c.image, c.image_url),
+          // Normalisasi cache ERP lama ke folder public khusus kategori.
+          image: categoryImageUrl(c.image, c.image_url),
           icon: c.icon,
           description: c.description || undefined,
           parentId: c.parent_id != null ? String(c.parent_id) : undefined,
