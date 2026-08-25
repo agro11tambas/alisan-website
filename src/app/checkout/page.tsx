@@ -15,6 +15,7 @@ import { orderService } from "@/services/orderService";
 import { Discount, getActiveDiscounts } from "@/services/discountService";
 import { calculateDiscountAmount, calculateItemDiscounts } from "@/utils/discountUtils";
 import ProductImagePreview from "@/components/common/ProductImagePreview";
+import { findUnorderableItems } from "@/utils/cartItemUtils";
 
 const guestSchema = z.object({
   businessName: z.string().optional(),
@@ -92,6 +93,18 @@ export default function CheckoutPage() {
   };
 
   const handleCheckout = async () => {
+    // Item lama (dibuat sebelum payload order memakai mode + combination id)
+    // pasti ditolak backend, jadi dicegat di sini dengan pesan yang jelas.
+    const unorderableItems = findUnorderableItems(selectedItems);
+    if (unorderableItems.length > 0) {
+      alert(
+        `Item berikut perlu dipilih ulang dari halaman produk karena datanya sudah tidak lengkap:\n\n`
+        + unorderableItems.map(item => `• ${item.displayName}`).join("\n")
+        + `\n\nHapus item tersebut dari keranjang, lalu tambahkan kembali.`,
+      );
+      return;
+    }
+
     let orderPayload: any = {
       order_date: new Date().toISOString(),
       payment_method: "WhatsApp",

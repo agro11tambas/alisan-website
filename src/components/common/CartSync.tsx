@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 import { CartItem } from "@/types";
 import { cartService } from "@/services/cartService";
@@ -8,6 +9,7 @@ import { productService } from "@/services/productService";
 import { useCartStore, waitForCartHydration } from "@/stores/useCartStore";
 import { CUSTOMER_AUTH_CHANGED_EVENT } from "@/lib/customer-auth-events";
 import { getCartItemImage } from "@/utils/productImageUtils";
+import { sanitizeCartItems } from "@/utils/cartItemUtils";
 
 const CART_ACCOUNT_STORAGE_KEY = "alisan-cart-account-id";
 const SYNC_DELAY_MS = 400;
@@ -69,7 +71,21 @@ export default function CartSync() {
 
       try {
         const groups = await productService.getProductGroups();
-        return items.map((item) => {
+        // Cart yang tersimpan di server bisa berisi item versi lama (tanpa mode
+        // atau dengan combination id basi) yang selalu ditolak saat checkout.
+        const { items: sanitizedItems, dropped } = sanitizeCartItems(items, groups);
+
+        if (dropped.length > 0) {
+          console.warn(
+            "Item cart dihapus karena sudah tidak valid di ERP:",
+            dropped.map((item) => item.displayName),
+          );
+          toast.warning("Beberapa item dihapus dari keranjang", {
+            description: `${dropped.map((item) => item.displayName).join(", ")} sudah tidak tersedia.`,
+          });
+        }
+
+        return sanitizedItems.map((item) => {
           const group = groups.find((candidate) =>
             (item.groupSlug && candidate.slug === item.groupSlug)
             || String(candidate.id) === String(item.productGroupId),
