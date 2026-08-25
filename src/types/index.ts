@@ -29,6 +29,8 @@ export type Product = {
   image?: string;
   gallery?: string[];
   allowWithoutLid?: boolean;
+  /** True bila produk ini datang dari variant option ERP, bukan fallback grup tanpa varian. */
+  isVariantOption?: boolean;
   description?: string;
   optionName?: string;
   minimumOrder: number;
@@ -97,6 +99,8 @@ export type CartItem = {
   orderStep: number;
   unitName?: string;
   combinationId?: number;
+  /** Id variant option ERP; kosong untuk produk yang memang tidak punya varian. */
+  variantOptionId?: string;
   modeSlug: string;
   modeName: string;
   categories?: string[];

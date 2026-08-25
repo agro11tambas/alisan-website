@@ -81,6 +81,13 @@ export interface SaleOrderPagination {
   total: number;
 }
 
+/** Respons `POST /ecommerce/sale-orders`; totalnya sudah dihitung ulang oleh ERP. */
+interface CreateOrderResponse {
+  success: boolean;
+  message: string;
+  data: SaleOrder;
+}
+
 interface SaleOrderListResponse {
   success: boolean;
   message: string;
@@ -114,7 +121,7 @@ interface SaleOrderSyncResponse {
 
 export const orderService = {
   createOrder: async (payload: CreateOrderPayload) => {
-    return api.post("/ecommerce/sale-orders", payload);
+    return api.post<CreateOrderResponse>("/ecommerce/sale-orders", payload);
   },
   getOrders: async (page = 1, perPage = 10) => {
     const response = await api.get<SaleOrderListResponse>("/ecommerce/sale-orders", {

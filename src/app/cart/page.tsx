@@ -7,6 +7,7 @@ import { Minus, Plus, Trash2, ShoppingBag, ZoomIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Discount, getActiveDiscounts } from "@/services/discountService";
 import { calculateDiscountAmount, calculateItemDiscounts } from "@/utils/discountUtils";
+import { normalizeQuantity } from "@/utils/cartItemUtils";
 import ProductImagePreview from "@/components/common/ProductImagePreview";
 import OrderList from "@/components/order/OrderList";
 
@@ -202,8 +203,8 @@ export default function CartPage() {
                                   <div className="flex items-center gap-2 sm:justify-center">
                                     <div className="flex items-center border border-gray-200 rounded-sm w-fit bg-white">
                                       <button
-                                        onClick={() => cart.updateQuantity(item.id, Math.max(item.minOrder, item.quantity - item.orderStep))}
-                                        disabled={item.quantity <= item.minOrder}
+                                        onClick={() => cart.updateQuantity(item.id, normalizeQuantity(item.quantity - item.orderStep, item.minOrder, item.orderStep, item.stock))}
+                                        disabled={normalizeQuantity(item.quantity - item.orderStep, item.minOrder, item.orderStep, item.stock) >= item.quantity}
                                         className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
                                       >
                                         <Minus size={14} />
@@ -212,8 +213,8 @@ export default function CartPage() {
                                         {item.quantity.toLocaleString("id-ID")}
                                       </div>
                                       <button
-                                        onClick={() => cart.updateQuantity(item.id, Math.min(item.stock, item.quantity + item.orderStep))}
-                                        disabled={(item.quantity + item.orderStep) > item.stock}
+                                        onClick={() => cart.updateQuantity(item.id, normalizeQuantity(item.quantity + item.orderStep, item.minOrder, item.orderStep, item.stock))}
+                                        disabled={normalizeQuantity(item.quantity + item.orderStep, item.minOrder, item.orderStep, item.stock) <= item.quantity}
                                         className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
                                       >
                                         <Plus size={14} />

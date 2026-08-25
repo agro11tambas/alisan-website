@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { ProductGroup, Product, AddOnProduct, ModePrice } from "@/types";
 import { useCartStore } from "@/stores/useCartStore";
+import { normalizeQuantity } from "@/utils/cartItemUtils";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Minus, Plus, ShoppingCart, AlertCircle, MessageSquare, Heart, ShieldCheck, ZoomIn, X } from "lucide-react";
@@ -188,7 +189,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
 
   const handleSelect = (p: Product) => {
     setSelectedProduct(p);
-    setQuantity(p.minimumOrder || 1);
+    setQuantity(normalizeQuantity(p.minimumOrder || 1, p.minimumOrder || 1, p.orderStep || 1, p.stock));
     // Tutup yang kombinasinya tidak menyediakan mode terpilih ikut dilepas.
     const keepLid = selectedLid && (!selectedMode
       || modePricesFor(p, selectedLid).some((price) => price.slug === selectedMode.slug));
@@ -208,7 +209,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
       const maxLidStock = lid ? lid.stock : Infinity;
       const finalMax = Math.min(selectedProduct.stock, maxLidStock);
       if (quantity > finalMax) {
-        setQuantity(Math.max(selectedProduct.minimumOrder || 1, finalMax));
+        setQuantity(normalizeQuantity(finalMax, selectedProduct.minimumOrder || 1, selectedProduct.orderStep || 1, finalMax));
       }
     }
     if (onImageChange) {
@@ -227,16 +228,20 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     ? Math.min(selectedProduct.stock, selectedLid ? selectedLid.stock : Infinity)
     : 0;
 
+  // Qty yang sah menurut backend adalah kelipatan orderStep yang >= minOrder dan
+  // <= stok. Setiap langkah dilewatkan ke normalizeQuantity, dan tombolnya mati
+  // ketika langkah berikutnya tidak lagi mengubah apa-apa.
+  const stepQuantity = (delta: number) => normalizeQuantity(quantity + delta, minOrder, orderStep, maxStock);
+
+  const canDecrease = Boolean(selectedProduct) && stepQuantity(-orderStep) < quantity;
+  const canIncrease = Boolean(selectedProduct) && stepQuantity(orderStep) > quantity;
+
   const handleDecrease = () => {
-    if (quantity > minOrder) {
-      setQuantity(q => Math.max(minOrder, q - orderStep));
-    }
+    if (canDecrease) setQuantity(stepQuantity(-orderStep));
   };
 
   const handleIncrease = () => {
-    if (selectedProduct && (quantity + orderStep) <= maxStock) {
-      setQuantity(q => q + orderStep);
-    }
+    if (canIncrease) setQuantity(stepQuantity(orderStep));
   };
 
   const handleAddToCart = () => {
@@ -469,7 +474,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
             <div className="flex items-center border border-gray-300 rounded-md">
               <button 
                 onClick={handleDecrease}
-                disabled={!selectedProduct || quantity <= minOrder}
+                disabled={!canDecrease}
                 className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
               >
                 <Minus size={14} />
@@ -479,7 +484,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
               </div>
               <button 
                 onClick={handleIncrease}
-                disabled={!selectedProduct || (quantity + orderStep) > maxStock}
+                disabled={!canIncrease}
                 className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
               >
                 <Plus size={14} />
@@ -687,7 +692,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                 <div className="flex items-center border border-gray-200 rounded-sm">
                   <button
                     onClick={handleDecrease}
-                    disabled={!selectedProduct || quantity <= minOrder}
+                    disabled={!canDecrease}
                     className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
                   >
                     <Minus size={14} />
@@ -697,7 +702,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                   </div>
                   <button
                     onClick={handleIncrease}
-                    disabled={!selectedProduct || (quantity + orderStep) > maxStock}
+                    disabled={!canIncrease}
                     className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50"
                   >
                     <Plus size={14} />

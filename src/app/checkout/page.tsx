@@ -15,7 +15,7 @@ import { orderService } from "@/services/orderService";
 import { Discount, getActiveDiscounts } from "@/services/discountService";
 import { calculateDiscountAmount, calculateItemDiscounts } from "@/utils/discountUtils";
 import ProductImagePreview from "@/components/common/ProductImagePreview";
-import { findUnorderableItems } from "@/utils/cartItemUtils";
+import { findUnorderableItems, resolveVariantOptionId } from "@/utils/cartItemUtils";
 
 const guestSchema = z.object({
   businessName: z.string().optional(),
@@ -112,7 +112,7 @@ export default function CheckoutPage() {
       items: selectedItems.map(item => ({
         ecommerce_product_id: Number(item.productGroupId),
         ecommerce_variant_combination_id: item.combinationId ? Number(item.combinationId) : undefined,
-        variant_option_id: (!item.combinationId && String(item.mainProductId) !== String(item.productGroupId)) ? Number(item.mainProductId) : undefined,
+        variant_option_id: resolveVariantOptionId(item),
         quantity: item.quantity,
         mode: item.modeSlug,
       })),
@@ -146,7 +146,21 @@ export default function CheckoutPage() {
 
     try {
       const response = await orderService.createOrder(orderPayload);
-      const invoiceNumber = response.data?.data?.order_number || "Menunggu Invoice";
+      const createdOrder = response.data?.data;
+      const invoiceNumber = createdOrder?.order_number || "Menunggu Invoice";
+
+      // Harga dan diskon final dihitung ulang oleh ERP. Pesan WhatsApp harus
+      // memakai angka dari respons itu, bukan hasil hitungan lokal, supaya
+      // totalnya tidak pernah berbeda dengan invoice yang diterima admin.
+      const serverItems = Array.isArray(createdOrder?.items) ? createdOrder.items : [];
+      const serverItemsAlign = serverItems.length === selectedItems.length;
+      const localSubtotal = cart.getSubtotal();
+      const localDiscount = calculateDiscountAmount(selectedItems, discounts);
+      const subtotal = typeof createdOrder?.total_amount === "number" ? createdOrder.total_amount : localSubtotal;
+      const discountAmount = typeof createdOrder?.discount === "number" ? createdOrder.discount : localDiscount;
+      const totalPay = typeof createdOrder?.grand_total === "number"
+        ? createdOrder.grand_total
+        : subtotal - discountAmount;
 
       const cpName = isLoggedIn ? (customer?.name || customer?.fullName || "Pelanggan") : guestData?.recipientName;
       const cpPhone = isLoggedIn ? (customer?.whatsapp_number || customer?.whatsappNumber || "-") : guestData?.whatsappNumber;
@@ -177,25 +191,27 @@ export default function CheckoutPage() {
       message += `Daftar Pesanan:\n\n`;
       
       selectedItems.forEach((item, index) => {
-        const itemSubtotal = item.price * item.quantity;
+        // Nama item tetap dari keranjang (lebih jelas untuk pelanggan), tapi
+        // harganya dari ERP kalau barisnya memang sepadan satu-satu.
+        const serverItem = serverItemsAlign ? serverItems[index] : undefined;
+        const itemPrice = typeof serverItem?.price === "number" ? serverItem.price : item.price;
+        const itemSubtotal = typeof serverItem?.subtotal === "number" ? serverItem.subtotal : itemPrice * item.quantity;
         if (item.type === 'bundle') {
           message += `${index + 1}. ${item.groupName} - ${item.mainProductName} + ${item.addOnProductName}\n`;
         } else {
           message += `${index + 1}. ${item.groupName} - ${item.mainProductName}\n`;
         }
         message += `Mode: ${item.modeName}\n`;
-        message += `Rp ${item.price.toLocaleString('id-ID')} x ${item.quantity.toLocaleString('id-ID')} ${item.unitName || "Pcs"} = Rp ${itemSubtotal.toLocaleString('id-ID')}\n\n`;
+        message += `Rp ${itemPrice.toLocaleString('id-ID')} x ${item.quantity.toLocaleString('id-ID')} ${item.unitName || "Pcs"} = Rp ${itemSubtotal.toLocaleString('id-ID')}\n\n`;
       });
-      
+
       message += `━━━━━━━━━━━━━━━\n`;
-      message += `Subtotal: Rp ${cart.getSubtotal().toLocaleString('id-ID')}\n`;
-      
-      const discountAmount = calculateDiscountAmount(selectedItems, discounts);
+      message += `Subtotal: Rp ${subtotal.toLocaleString('id-ID')}\n`;
+
       if (discountAmount > 0) {
         message += `Diskon (- Rp ${discountAmount.toLocaleString('id-ID')})\n`;
       }
-      
-      const totalPay = cart.getSubtotal() - discountAmount;
+
       message += `Total Pembayaran: Rp ${totalPay.toLocaleString('id-ID')}`;
       
       const info = await informationService.getInformation();

@@ -78,6 +78,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           ),
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
           allowWithoutLid: Boolean(opt.allow_without_lid ?? true),
+          isVariantOption: true,
           erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
           modePrices: mapModePrices(opt.mode_prices),
         };
@@ -92,6 +93,7 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
         minimumOrder: Number(ecProduct.min_qty || 1),
         orderStep: Number(ecProduct.multiple_qty || 1),
         image: imageUrl,
+        isVariantOption: false,
       }];
     }
 

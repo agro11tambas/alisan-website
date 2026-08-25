@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { useSyncExternalStore } from 'react';
 import { CartItem, Product, ProductGroup, AddOnProduct, ModePrice } from '@/types';
 import { findProductCombination, getSelectedProductImage } from '@/utils/productImageUtils';
+import { normalizeQuantity } from '@/utils/cartItemUtils';
 
 interface CartState {
   items: CartItem[];
@@ -46,7 +47,19 @@ export const useCartStore = create<CartState>()(
             return {
               items: state.items.map((item) =>
                 item.id === cartItemId
-                  ? { ...item, quantity: item.quantity + quantity, price: unitPrice, image: selectedImage }
+                  ? {
+                      ...item,
+                      // Tambah berulang bisa melewati stok / kelipatan qty yang
+                      // masih diterima backend, jadi selalu dinormalkan dulu.
+                      quantity: normalizeQuantity(
+                        item.quantity + quantity,
+                        item.minOrder,
+                        item.orderStep,
+                        item.stock,
+                      ),
+                      price: unitPrice,
+                      image: selectedImage,
+                    }
                   : item,
               ),
             };
@@ -84,6 +97,7 @@ export const useCartStore = create<CartState>()(
             orderStep: product.orderStep || 1,
             unitName: group.unitName || 'Pcs',
             combinationId,
+            variantOptionId: product.isVariantOption === false ? undefined : product.id,
             modeSlug: mode.slug,
             modeName: mode.name,
             categories: group.categories,

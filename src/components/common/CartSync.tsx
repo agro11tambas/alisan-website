@@ -110,6 +110,16 @@ export default function CartSync() {
       const token = localStorage.getItem("customer_token");
 
       if (!token) {
+        // Cart guest tidak disinkronkan ke server, tapi tetap harus disegarkan:
+        // harga, batas qty, dan variant id-nya bisa sudah berubah di ERP sejak
+        // item itu ditambahkan, dan checkout akan ditolak backend.
+        const guestItems = useCartStore.getState().items;
+        const refreshedGuestItems = await refreshImagesFromErp(guestItems);
+
+        if (!disposed && !itemsMatch(guestItems, refreshedGuestItems)) {
+          replaceItems(refreshedGuestItems);
+        }
+
         return;
       }
 
