@@ -3,8 +3,22 @@
 import { useCartHydrated, useCartStore } from "@/stores/useCartStore";
 import Image from "next/image";
 import Link from "next/link";
-import { Minus, Plus, Trash2, ShoppingBag, ZoomIn } from "lucide-react";
+import {
+  Clock,
+  Minus,
+  Package,
+  PackageCheck,
+  Plus,
+  ShoppingBag,
+  ShoppingCart,
+  Trash2,
+  ZoomIn,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCurrentCustomer } from "@/hooks/use-current-customer";
+import { useOrderStageCounts } from "@/hooks/use-customer-orders";
 import { Discount, getActiveDiscounts } from "@/services/discountService";
 import { calculateDiscountAmount, calculateItemDiscounts } from "@/utils/discountUtils";
 import { normalizeQuantity } from "@/utils/cartItemUtils";
@@ -13,28 +27,65 @@ import OrderList from "@/components/order/OrderList";
 
 type TabId = "cart" | "waiting_verification" | "processing" | "completed";
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "cart", label: "Keranjang" },
-  { id: "waiting_verification", label: "Menunggu Verifikasi" },
-  { id: "processing", label: "Diproses" },
-  { id: "completed", label: "Selesai" },
+/**
+ * `shortLabel` dipakai versi mobile: empat kolom sejajar tidak muat menampung
+ * "Menunggu Verifikasi" tanpa memaksa labelnya membungkus jadi tiga baris.
+ */
+const TABS: { id: TabId; label: string; shortLabel: string; icon: LucideIcon }[] = [
+  { id: "cart", label: "Keranjang", shortLabel: "Keranjang", icon: ShoppingCart },
+  {
+    id: "waiting_verification",
+    label: "Menunggu Verifikasi",
+    shortLabel: "Verifikasi",
+    icon: Clock,
+  },
+  { id: "processing", label: "Diproses", shortLabel: "Diproses", icon: Package },
+  { id: "completed", label: "Selesai", shortLabel: "Selesai", icon: PackageCheck },
 ];
 
+/** Badge merah kecil di pojok ikon, seperti pintasan pesanan di aplikasi toko. */
+function TabBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+
+  return (
+    <span className="absolute -right-2.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 export default function CartPage() {
+  const router = useRouter();
+  const { loading: customerLoading, isLoggedIn } = useCurrentCustomer();
   const [activeTab, setActiveTab] = useState<TabId>("cart");
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const cart = useCartStore();
   const isCartHydrated = useCartHydrated();
+  const stageCounts = useOrderStageCounts();
   const selectedItems = cart.items.filter(i => i.isSelected !== false);
   const itemDiscounts = calculateItemDiscounts(selectedItems, discounts);
   const discountAmount = calculateDiscountAmount(selectedItems, discounts);
   
   const isAllSelected = cart.items.length > 0 && cart.items.every(i => i.isSelected !== false);
 
+  /**
+   * Keranjang dan tab pesanan sama-sama butuh sesi customer, jadi pengunjung
+   * yang belum masuk langsung dialihkan. `redirect` dipakai supaya setelah
+   * login mereka kembali ke sini, bukan ke beranda.
+   */
   useEffect(() => {
+    if (!customerLoading && !isLoggedIn) {
+      router.replace(`/login?redirect=${encodeURIComponent("/cart")}`);
+    }
+  }, [customerLoading, isLoggedIn, router]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
     getActiveDiscounts().then(setDiscounts);
-  }, []);
+  }, [isLoggedIn]);
+
+  if (customerLoading || !isLoggedIn) return null;
 
   if (!isCartHydrated) return null;
 
@@ -42,14 +93,51 @@ export default function CartPage() {
     <div className="bg-gray-50 min-h-screen pb-[calc(env(safe-area-inset-bottom)+80px)] lg:pb-8">
       {/* Tabs */}
       <div className="border-b border-gray-200 bg-white">
-        <div className="w-full sm:container sm:mx-auto sm:px-4">
+        {/*
+          Mobile memakai pintasan empat kolom (ikon di atas, label di bawah,
+          badge jumlah di pojok ikon); desktop tetap deretan tab bergaris bawah.
+        */}
+        <div
+          role="tablist"
+          aria-label="Keranjang dan pesanan"
+          className="grid grid-cols-4 px-1 py-2.5 sm:hidden"
+        >
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            const Icon = tab.icon;
+            const count = tab.id === "cart" ? cart.items.length : stageCounts[tab.id];
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex flex-col items-center gap-1.5 rounded-lg py-2 transition-colors ${
+                  isActive ? "bg-primary/5 text-primary" : "text-gray-700"
+                }`}
+              >
+                <span className="relative">
+                  <Icon size={26} strokeWidth={1.6} />
+                  <TabBadge count={count} />
+                </span>
+                <span className="text-[11px] font-medium leading-tight">{tab.shortLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="hidden sm:container sm:mx-auto sm:block sm:px-4">
           <div
             role="tablist"
             aria-label="Keranjang dan pesanan"
-            className="flex gap-1 overflow-x-auto px-2 [scrollbar-width:none] sm:px-0 [&::-webkit-scrollbar]:hidden"
+            className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
+              const Icon = tab.icon;
+              const count = tab.id === "cart" ? cart.items.length : stageCounts[tab.id];
 
               return (
                 <button
@@ -58,14 +146,19 @@ export default function CartPage() {
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative shrink-0 whitespace-nowrap px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${
+                  className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-semibold transition-colors ${
                     isActive ? "text-primary" : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
+                  <Icon size={17} strokeWidth={2} />
                   {tab.label}
-                  {tab.id === "cart" && cart.items.length > 0 && (
-                    <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                      {cart.items.length}
+                  {count > 0 && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                        isActive ? "bg-primary/10 text-primary" : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {count > 99 ? "99+" : count}
                     </span>
                   )}
                   <span
