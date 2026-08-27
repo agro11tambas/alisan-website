@@ -7,6 +7,7 @@ import FloatingWhatsAppButton from "@/components/common/FloatingWhatsAppButton";
 import CartSync from "@/components/common/CartSync";
 import { Toaster } from "@/components/ui/sonner";
 import NavigationHistory from "@/components/common/NavigationHistory";
+import StaleBuildRecovery from "@/components/common/StaleBuildRecovery";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="light" style={{ colorScheme: "light" }}>
+      <head>
+        <StaleBuildRecovery />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen flex flex-col bg-gray-50/50`}
       >
