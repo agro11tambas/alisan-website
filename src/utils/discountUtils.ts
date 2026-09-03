@@ -1,6 +1,50 @@
 import { CartItem } from '@/types';
 import { Discount } from '@/services/discountService';
 
+/** Syarat "Apply On" yang bisa dinilai dari isi keranjang. */
+const MATCHABLE_SCOPES = ['Product', 'Category', 'Mode'];
+
+const scopesOf = (discount: Discount): string[] => {
+  const raw = discount.apply_on_list?.length
+    ? discount.apply_on_list
+    : String(discount.apply_on || '').split(',');
+
+  return raw.map(scope => scope.trim()).filter(scope => MATCHABLE_SCOPES.includes(scope));
+};
+
+/**
+ * Apakah satu item memenuhi SEMUA syarat "Apply On" diskon ini.
+ *
+ * Sejak "Apply On" boleh lebih dari satu, syaratnya digabung DAN — diskon
+ * "Category + Mode" hanya kena item yang kategorinya cocok DAN mode-nya cocok.
+ * Harus sama persis dengan evaluator di ERP (DiscountScopeMatcher), karena
+ * angka yang ditagih adalah hasil hitungan ERP.
+ */
+const matchesApplyOn = (discount: Discount, item: CartItem): boolean => {
+  const scopes = scopesOf(discount);
+
+  // Tidak ada syarat yang bisa dinilai — jangan diterapkan ke semua item.
+  if (scopes.length === 0) return false;
+
+  return scopes.every(scope => {
+    if (scope === 'Product') {
+      return !!item.erpProductId
+        && discount.products.some(productId => String(productId) === item.erpProductId);
+    }
+
+    if (scope === 'Category') {
+      return discount.categories.some(categoryId => item.erpCategoryIds?.includes(String(categoryId)));
+    }
+
+    if (scope === 'Mode') {
+      return !!item.modeSlug
+        && (discount.price_mode_slugs || []).includes(item.modeSlug);
+    }
+
+    return false;
+  });
+};
+
 export const calculateItemDiscounts = (items: CartItem[], discounts: Discount[]): Record<string, number> => {
   const itemDiscounts: Record<string, number> = {};
   if (!discounts || discounts.length === 0) return itemDiscounts;
@@ -17,15 +61,12 @@ export const calculateItemDiscounts = (items: CartItem[], discounts: Discount[])
     if (!isEligible) return;
 
     items.forEach(item => {
-      const appliesToProduct = discount.apply_on === 'Product'
-        && !!item.erpProductId
-        && discount.products.some(productId => String(productId) === item.erpProductId);
-      const appliesToErpCategory = discount.apply_on === 'Category'
-        && discount.categories.some(categoryId => item.erpCategoryIds?.includes(String(categoryId)));
+      // Target ecommerce adalah kolom tersendiri di luar `apply_on`, dan
+      // hubungannya dengan `apply_on` tetap ATAU.
       const appliesToEcommerceCategory = discount.apply_on_ecommerce === 'Category'
         && discount.ecommerce_categories.some(categoryId => item.categories?.includes(String(categoryId)));
 
-      if (!appliesToProduct && !appliesToErpCategory && !appliesToEcommerceCategory) return;
+      if (!matchesApplyOn(discount, item) && !appliesToEcommerceCategory) return;
 
       eligibleDiscounts[item.id] = [...(eligibleDiscounts[item.id] || []), discount];
     });
