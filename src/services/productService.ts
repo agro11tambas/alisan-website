@@ -1,27 +1,9 @@
 import axios from "axios";
-import { api } from "./api";
+import { api, getWithRetry } from "./api";
 import { ProductGroup, AddOnProduct, Product, ModePrice } from "@/types";
 import { cache } from "react";
 
-const getCatalog = async (url: string) => {
-  try {
-    return await api.get(url);
-  } catch (error) {
-    if (!axios.isAxiosError(error) || error.response?.status !== 503) {
-      throw error;
-    }
-
-    // Backend memakai 503 singkat saat cache benar-benar dingin dan hanya satu
-    // worker sedang memanaskannya. Coba sekali lagi; jangan ubah kegagalan ini
-    // menjadi katalog kosong yang kemudian disimpan ISR selama beberapa menit.
-    const retryAfter = Number(error.response.headers["retry-after"] || 1);
-    const retrySeconds = Number.isFinite(retryAfter) ? retryAfter : 1;
-    const waitMs = Math.min(Math.max(retrySeconds, 1), 5) * 1000;
-    await new Promise((resolve) => setTimeout(resolve, waitMs));
-
-    return api.get(url);
-  }
-};
+const getCatalog = getWithRetry;
 
 const mapModePrices = (prices: any[] = []): ModePrice[] => prices.map((price: any) => ({
   priceModeId: Number(price.price_mode_id),

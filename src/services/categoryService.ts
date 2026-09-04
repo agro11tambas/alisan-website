@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { getWithRetry } from "./api";
 import { Category } from "@/types";
 
 const firstImageUrl = (...candidates: unknown[]): string | undefined => {
@@ -62,7 +62,7 @@ const buildTree = (flat: FlatCategory[]): FlatCategory[] => {
 
 const fetchCategories = async (): Promise<Category[]> => {
   try {
-    const response = await api.get("/ecommerce/categories");
+    const response = await getWithRetry("/ecommerce/categories");
     if (response.data?.success && response.data?.data) {
       const flat: FlatCategory[] = response.data.data
         .filter((c: ApiCategory) => c.is_active !== false)
