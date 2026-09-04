@@ -170,6 +170,29 @@ const fetchProductGroupBySlug = cache(
       }
 
       console.error("Error fetching product by slug:", error);
+
+      // Endpoint detail (`/ecommerce/products/{slug}`) bisa mati sendirian
+      // sementara endpoint katalog (`/ecommerce/products`) tetap sehat — persis
+      // yang terjadi saat ERP tersangkut di status "Katalog sedang diperbarui"
+      // dan membalas 503 terus-menerus hanya untuk detail. Keduanya dipetakan
+      // fungsi yang sama dari bentuk data yang sama (`variant_groups`,
+      // `variant_combinations`, `price_modes`, `gallery_images`), jadi entri di
+      // daftar katalog adalah pengganti yang setara, bukan versi yang dipangkas.
+      // Tanpa ini seluruh halaman produk ikut mati padahal datanya masih ada.
+      try {
+        const groups = await fetchAllProductGroups();
+        const fallback = groups.find((group) => group.slug === slug);
+
+        if (fallback) {
+          console.warn(
+            `[catalog] detail ${slug} gagal, memakai data dari daftar katalog`,
+          );
+          return fallback;
+        }
+      } catch (fallbackError) {
+        console.error("Fallback katalog ikut gagal:", fallbackError);
+      }
+
       throw error;
     }
   },
