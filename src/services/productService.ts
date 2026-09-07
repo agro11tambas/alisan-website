@@ -48,16 +48,10 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           optionName: opt.alias || erpProd.name,
           minimumOrder: Number(ecProduct.min_qty || 1),
           orderStep: Number(ecProduct.multiple_qty || 1),
-          // No group-image fallback: an option without its own photo must show
-          // no thumbnail rather than the whole product's photo.
-          image: firstImageUrl(
-            opt.image_url,
-            opt.image,
-            erpProd.image_url,
-            erpProd.image,
-            erpProd.thumbnail_url,
-            erpProd.thumbnail,
-          ),
+          // Hanya foto yang memang diunggah untuk opsi ini. Tidak ada fallback ke
+          // gambar grup maupun produk master ERP, karena foto ERP kerap tidak
+          // menggambarkan varian (mis. foto kardus untuk opsi tutup).
+          image: firstImageUrl(opt.image_url, opt.image),
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
           allowWithoutLid: Boolean(opt.allow_without_lid ?? true),
           isVariantOption: true,
@@ -89,14 +83,9 @@ const mapBackendToFrontend = (apiData: any[]): ProductGroup[] => {
           price: Number(opt.original_price || opt.price || erpProd.price || 0),
           salePrice: (opt.original_price && Number(opt.price) < Number(opt.original_price)) ? Number(opt.price) : (Number(erpProd.sale_price) > 0 ? Number(erpProd.sale_price) : undefined),
           stock: Number(ecProduct.max_qty || 1000),
-          image: firstImageUrl(
-            opt.image_url,
-            opt.image,
-            erpProd.image_url,
-            erpProd.image,
-            erpProd.thumbnail_url,
-            erpProd.thumbnail,
-          ),
+          // Sama seperti opsi produk: tanpa unggahan sendiri, opsi tutup tidak
+          // menampilkan thumbnail sama sekali.
+          image: firstImageUrl(opt.image_url, opt.image),
           erpProductId: opt.erp_product_id ? String(opt.erp_product_id) : undefined,
           erpCategoryIds: opt.erp_category_ids ? opt.erp_category_ids.map(String) : [],
           modePrices: mapModePrices(opt.mode_prices),
