@@ -118,8 +118,10 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isImagePreviewOpen]);
 
+  // Sheet mobile sengaja dibiarkan terbuka setelah item masuk keranjang supaya
+  // pelanggan bisa langsung menambah varian lain; hanya qty yang direset.
   const handleAddToCartFromSheet = () => {
-    if (handleAddToCart()) setIsSheetOpen(false);
+    handleAddToCart();
   };
 
   useEffect(() => {
@@ -244,6 +246,11 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     if (canIncrease) setQuantity(stepQuantity(orderStep));
   };
 
+  // Kembalikan qty ke minimum order yang sah setelah item masuk keranjang.
+  const resetQuantity = () => {
+    setQuantity(normalizeQuantity(minOrder, minOrder, orderStep, maxStock));
+  };
+
   const handleAddToCart = () => {
     if (!selectedMode) {
       toast.error("Silakan pilih mode terlebih dahulu");
@@ -274,6 +281,7 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     toast.success("Berhasil Ditambahkan", {
       description: `${quantity.toLocaleString("id-ID")}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`
     });
+    resetQuantity();
     return true;
   };
 
