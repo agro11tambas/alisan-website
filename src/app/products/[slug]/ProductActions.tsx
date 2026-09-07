@@ -118,10 +118,8 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isImagePreviewOpen]);
 
-  // Sheet mobile sengaja dibiarkan terbuka setelah item masuk keranjang supaya
-  // pelanggan bisa langsung menambah varian lain; hanya qty yang direset.
   const handleAddToCartFromSheet = () => {
-    handleAddToCart();
+    if (handleAddToCart()) setIsSheetOpen(false);
   };
 
   useEffect(() => {
