@@ -48,9 +48,11 @@ export default function RootLayout({
         <main className="flex-1">{children}</main>
         <Footer />
         <FloatingWhatsAppButton />
-        <div className="hidden md:block">
-          <Toaster position="top-center" />
-        </div>
+        <Toaster
+          position="top-center"
+          offset={{ top: 84 }}
+          mobileOffset={{ top: 68, left: 12, right: 12 }}
+        />
       </body>
     </html>
   );

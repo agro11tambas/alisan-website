@@ -276,8 +276,13 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
     }
 
     addItem(group, selectedProduct, quantity, selectedModePrice || selectedMode, displayPrice, selectedLid || undefined);
-    toast.success("Berhasil Ditambahkan", {
-      description: `${quantity.toLocaleString("id-ID")}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`
+    toast.success("Berhasil masuk keranjang", {
+      description: `${quantity.toLocaleString("id-ID")}x ${selectedProduct.name}${selectedLid ? ` + ${selectedLid.name}` : ''} ditambahkan.`,
+      duration: 3500,
+      action: {
+        label: "Lihat Keranjang",
+        onClick: () => router.push("/cart"),
+      },
     });
     resetQuantity();
     return true;
