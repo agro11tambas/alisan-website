@@ -165,7 +165,14 @@ export default function CheckoutPage() {
       const cpName = isLoggedIn ? (customer?.name || customer?.fullName || "Pelanggan") : guestData?.recipientName;
       const cpPhone = isLoggedIn ? (customer?.whatsapp_number || customer?.whatsappNumber || "-") : guestData?.whatsappNumber;
       
+      // Tanggal order ikut dari respons ERP supaya sama dengan yang tercatat
+      // di invoice; kalau belum ada, pakai waktu saat checkout.
+      const parsedOrderDate = createdOrder?.order_date ? new Date(createdOrder.order_date) : new Date();
+      const orderDateText = (Number.isNaN(parsedOrderDate.getTime()) ? new Date() : parsedOrderDate)
+        .toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
       let message = `*ORDER SUMMARY*\n`;
+      message += `📅 Tanggal Order: ${orderDateText}\n`;
       if (isLoggedIn && selectedAddr) {
         if (selectedAddr.business_name || selectedCust?.name) {
           message += `🏢 Business: ${selectedAddr.business_name || selectedCust?.name}\n`;

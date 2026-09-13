@@ -11,43 +11,10 @@ import type { Instrumentation } from "next";
  * tidak ketemu sama sekali. Jadi selain mencetak ke stdout, hook ini menulis
  * salinannya ke berkas tetap di dalam folder aplikasi: `logs/server-error.log`.
  * Lokasi itu selalu sama, apa pun cara deploy-nya.
+ *
+ * Penulisan berkasnya ada di instrumentation-log-file.ts, dipisah supaya
+ * `node:fs` tidak ikut terbawa ke bundle Edge Runtime.
  */
-
-const LOG_DIRECTORY = "logs";
-const LOG_FILE = "server-error.log";
-
-/**
- * Log dibiarkan tumbuh sampai batas ini lalu file lama ditimpa, supaya kuota
- * shared hosting tidak habis kalau ada error yang terjadi berulang kali.
- */
-const MAX_LOG_BYTES = 5 * 1024 * 1024;
-
-const appendToLogFile = async (entry: string) => {
-  // Runtime edge tidak punya akses berkas; di sana cukup stdout.
-  if (process.env.NEXT_RUNTIME !== "nodejs") return;
-
-  try {
-    const { appendFile, mkdir, stat, rm } = await import("node:fs/promises");
-    const { join } = await import("node:path");
-
-    const directory = join(process.cwd(), LOG_DIRECTORY);
-    const file = join(directory, LOG_FILE);
-
-    await mkdir(directory, { recursive: true });
-
-    try {
-      const { size } = await stat(file);
-      if (size > MAX_LOG_BYTES) await rm(file, { force: true });
-    } catch {
-      // Berkas belum ada — tidak apa-apa, appendFile yang membuatnya.
-    }
-
-    await appendFile(file, entry, "utf8");
-  } catch (writeError) {
-    // Menulis log tidak boleh menjadi sumber error baru; cukup laporkan sekali.
-    console.error("[instrumentation] gagal menulis log error:", writeError);
-  }
-};
 
 export const onRequestError: Instrumentation.onRequestError = async (
   error,
@@ -77,5 +44,9 @@ export const onRequestError: Instrumentation.onRequestError = async (
 
   console.error(entry);
 
-  await appendToLogFile(entry);
+  // Runtime edge tidak punya akses berkas; di sana cukup stdout.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { appendToLogFile } = await import("./instrumentation-log-file");
+    await appendToLogFile(entry);
+  }
 };
