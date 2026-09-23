@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { ProductGroup, Product, AddOnProduct, ModePrice } from "@/types";
 import { useCartStore } from "@/stores/useCartStore";
 import { normalizeQuantity } from "@/utils/cartItemUtils";
@@ -556,11 +557,18 @@ export default function ProductActions({ group, onImageChange }: ProductActionsP
                 aria-label="Perbesar gambar produk"
                 className="group/image w-24 h-24 rounded-md overflow-hidden bg-gray-100 shrink-0 border border-gray-200 relative -mt-6 bg-white p-1 shadow-sm cursor-zoom-in"
               >
-                <img 
-                  src={currentProductImage}
-                  alt={selectedProduct?.name || group.name}
-                  className="w-full h-full object-contain rounded transition-transform group-hover/image:scale-105"
-                />
+                {/* Dioptimasi, bukan <img> mentah: sumber dari ERP itu PNG
+                    1254x1254 (~1,5 MB) dan gambarnya berganti tiap kali varian
+                    atau tutup dipilih. */}
+                <span className="relative block w-full h-full">
+                  <Image
+                    src={currentProductImage}
+                    alt={selectedProduct?.name || group.name}
+                    fill
+                    sizes="96px"
+                    className="object-contain rounded transition-transform group-hover/image:scale-105"
+                  />
+                </span>
                 <span className="absolute right-1 bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-white shadow-sm">
                   <ZoomIn size={13} />
                 </span>

@@ -11,22 +11,33 @@ interface ProductGalleryProps {
   onActiveImageChange?: (image: string) => void;
 }
 
+// Kolom galeri memakai setengah lebar container mulai breakpoint md. Tanpa ini
+// browser menganggap gambarnya selebar viewport (100vw) dan mengunduh turunan
+// jauh lebih besar daripada yang benar-benar dipakai. Diekspor karena pemanas
+// cache harus memakai string yang persis sama agar kandidat srcset-nya cocok.
+export const GALLERY_IMAGE_SIZES = "(max-width: 767px) 100vw, (max-width: 1535px) 45vw, 720px";
+const THUMBNAIL_IMAGE_SIZES = "64px";
+
 export default function ProductGallery({ images, activeImage: controlledImage, onActiveImageChange }: ProductGalleryProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [internalIndex, setInternalIndex] = useState(0);
-  const [fadeKey, setFadeKey] = useState(0);
 
-  const displayedImage = controlledImage || images[internalIndex];
+  // Daftar slide ikut berubah saat varian lain dipilih. Embla harus mendaftar
+  // ulang slide-nya lebih dulu, kalau tidak `scrollTo` di bawah menghitung posisi
+  // dari daftar lama dan baru dikoreksi saat MutationObserver-nya menyusul —
+  // terlihat sebagai gambar yang meleset lalu meloncat balik.
+  useEffect(() => {
+    if (emblaApi) emblaApi.reInit();
+  }, [emblaApi, images]);
 
   // Sync embla with controlledImage
   useEffect(() => {
-    if (controlledImage && emblaApi) {
-      const idx = images.indexOf(controlledImage);
-      if (idx !== -1 && idx !== emblaApi.selectedScrollSnap()) {
-        emblaApi.scrollTo(idx);
-      }
-      setFadeKey(k => k + 1);
-    }
+    if (!controlledImage || !emblaApi) return;
+    const idx = images.indexOf(controlledImage);
+    if (idx === -1 || idx === emblaApi.selectedScrollSnap()) return;
+    // Memilih varian bukan gerakan menggeser, jadi loncat tanpa animasi supaya
+    // gambarnya tidak terasa tertinggal beberapa ratus milidetik.
+    emblaApi.scrollTo(idx, true);
   }, [controlledImage, emblaApi, images]);
 
   // Sync internal state with embla swipe
@@ -66,12 +77,17 @@ export default function ProductGallery({ images, activeImage: controlledImage, o
           <div className="flex w-full h-full">
             {images.map((img, idx) => (
               <div key={idx} className="relative flex-[0_0_100%] min-w-0 h-full">
-                <Image 
+                <Image
                   src={img}
                   alt={`Product Image ${idx + 1}`}
                   fill
+                  sizes={GALLERY_IMAGE_SIZES}
                   className="object-contain"
-                  priority={idx === 0}
+                  // Slide pertama hampir selalu jadi LCP halaman ini. `priority`
+                  // sudah deprecated sejak Next 16 dan `preload` cuma menyisipkan
+                  // <link>, jadi dipakai yang disarankan dokumentasinya.
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  fetchPriority={idx === 0 ? "high" : "auto"}
                 />
               </div>
             ))}
@@ -112,10 +128,11 @@ export default function ProductGallery({ images, activeImage: controlledImage, o
                 onClick={() => handleThumbnailClick(idx)}
                 className={`relative w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden border-2 shrink-0 ${isSelected ? 'border-[#0021F3]' : 'border-gray-200 hover:border-gray-300'} transition-all`}
               >
-                <Image 
+                <Image
                   src={img}
                   alt={`Thumbnail ${idx + 1}`}
                   fill
+                  sizes={THUMBNAIL_IMAGE_SIZES}
                   className="object-cover"
                 />
                 {isSelected && (

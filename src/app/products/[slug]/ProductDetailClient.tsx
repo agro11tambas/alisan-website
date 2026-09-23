@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { ProductGroup } from "@/types";
-import ProductGallery from "./ProductGallery";
+import ProductGallery, { GALLERY_IMAGE_SIZES } from "./ProductGallery";
 import ProductActions from "./ProductActions";
+import { useGalleryPreload } from "./useGalleryPreload";
+
+type ProductCombination = { image?: string };
 
 
 export default function ProductDetailClient({ group }: { group: ProductGroup }) {
@@ -12,6 +15,22 @@ export default function ProductDetailClient({ group }: { group: ProductGroup }) 
 
   const [activeImage, setActiveImage] = useState<string>(defaultImage);
   const [galleryImages, setGalleryImages] = useState<string[]>(defaultGallery);
+
+  // Tiap foto yang bisa muncul akibat pilihan user, dikumpulkan sekali supaya
+  // bisa dihangatkan sebelum diklik. Gambar kombinasi didahulukan karena itu
+  // yang paling sering belum pernah dibuat turunannya oleh optimizer.
+  const selectableImages = useMemo(() => {
+    const combinations = (group as ProductGroup & { _combinations?: ProductCombination[] })._combinations || [];
+    const collected = [
+      ...combinations.map((combination) => combination.image),
+      ...group.products.flatMap((product) => [product.image, ...(product.gallery || [])]),
+      group.image,
+      ...(group.gallery || []),
+    ];
+    return Array.from(new Set(collected.filter((image): image is string => Boolean(image))));
+  }, [group]);
+
+  useGalleryPreload(selectableImages, GALLERY_IMAGE_SIZES);
 
   const handleImageChange = useCallback((image: string, gallery?: string[]) => {
     const nextGallery = (gallery || []).filter(Boolean);
