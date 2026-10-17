@@ -1,6 +1,7 @@
 import axios from "axios";
 import { api, getWithRetry } from "./api";
-import { ProductGroup, AddOnProduct, Product, ModePrice } from "@/types";
+import { ProductGroup, AddOnProduct, Product, ModePrice, CatalogIndexEntry } from "@/types";
+import { normalizeCatalogKey } from "@/utils/catalogIndexUtils";
 import { cache } from "react";
 
 const getCatalog = getWithRetry;
@@ -208,6 +209,41 @@ export const productService = {
       console.error("Error fetching lids:", error);
       return [];
     }
+  },
+
+  /**
+   * Katalog dalam bentuk ringkas: cukup untuk mencocokkan riwayat pesanan
+   * dengan produk dan menampilkan kartunya. Dipakai section "Beli Lagi" di
+   * beranda, yang baru bisa dicocokkan di browser (riwayat pesanan milik
+   * customer yang sedang login), jadi katalognya ikut dikirim ke sana — tanpa
+   * opsi, kombinasi, dan galeri yang tidak dipakai kartu.
+   */
+  getCatalogIndex: async (): Promise<CatalogIndexEntry[]> => {
+    const groups = await fetchAllProductGroups();
+
+    return groups.map((group) => {
+      const addOns = (group as ProductGroup & { _lids?: AddOnProduct[] })._lids || [];
+      const currentPrices = group.products.map((product) => product.salePrice ?? product.price);
+      const normalPrices = group.products.map((product) => product.price);
+
+      const erpIds = [...group.products, ...addOns]
+        .map((option) => option.erpProductId)
+        .filter((erpProductId): erpProductId is string => Boolean(erpProductId));
+
+      const aliases = [group.name, ...group.products.map((product) => product.name)]
+        .filter(Boolean)
+        .map(normalizeCatalogKey);
+
+      return {
+        slug: group.slug,
+        name: group.name,
+        image: group.image,
+        price: currentPrices.length ? Math.min(...currentPrices) : 0,
+        originalPrice: normalPrices.length ? Math.min(...normalPrices) : 0,
+        erpIds: Array.from(new Set(erpIds)),
+        aliases: Array.from(new Set(aliases)),
+      };
+    });
   },
 
   getProductGroups: async (options?: {

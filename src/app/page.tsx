@@ -4,6 +4,7 @@ import { productService } from "@/services/productService";
 import { categoryService } from "@/services/categoryService";
 import FeaturedProductCarousel from "@/components/product/FeaturedProductCarousel";
 import CategoryThumb from "@/components/category/CategoryThumb";
+import BuyAgainSection from "@/components/product/BuyAgainSection";
 
 // Katalog jarang berubah, jadi halaman ini di-render ulang paling sering tiap 5
 // menit alih-alih tiap kunjungan. Perubahan dari ERP tidak perlu menunggu selama
@@ -11,9 +12,12 @@ import CategoryThumb from "@/components/category/CategoryThumb";
 export const revalidate = 300;
 
 export default async function Home() {
-  const [categories, groups] = await Promise.all([
+  // Ketiganya membaca katalog yang sama dan hasilnya di-cache per render,
+  // jadi indeks untuk section "Beli Lagi" tidak menambah panggilan ke ERP.
+  const [categories, groups, catalogIndex] = await Promise.all([
     categoryService.getCategoryTree(),
     productService.getProductGroups({ limit: 5 }),
+    productService.getCatalogIndex(),
   ]);
 
   return (
@@ -77,6 +81,9 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Beli Lagi */}
+      <BuyAgainSection catalog={catalogIndex} />
 
       {/* Featured Products */}
       <section className="py-1.5 md:py-6 bg-gray-50/50 border-t border-border">

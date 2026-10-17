@@ -151,3 +151,22 @@ export interface Order {
   createdAt: string;
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
 }
+
+/**
+ * Ringkasan katalog seukuran minimum, dipakai section "Beli Lagi" untuk
+ * mencocokkan item pesanan lama dengan produk katalog tanpa harus mengirim
+ * seluruh data produk ke browser.
+ */
+export type CatalogIndexEntry = {
+  slug: string;
+  name: string;
+  image?: string;
+  /** Harga termurah yang sedang berlaku di grup ini. */
+  price: number;
+  /** Harga normal termurah; dipakai untuk coretan saat ada promo. */
+  originalPrice: number;
+  /** Id produk ERP dari semua opsi & tutup, untuk pencocokan utama. */
+  erpIds: string[];
+  /** Nama grup dan opsinya yang sudah dinormalkan, untuk pencocokan cadangan. */
+  aliases: string[];
+};
