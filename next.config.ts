@@ -33,6 +33,9 @@ const nextConfig: NextConfig = {
       { source: "/", headers: pageCacheControl },
       { source: "/:path((?!_next/|api/).*)", headers: pageCacheControl },
       { source: "/login", headers: noStore },
+      // Halaman penebus link login: kodenya ada di path, dan hasilnya hanya
+      // berlaku untuk satu pengunjung satu kali.
+      { source: "/m/:code", headers: noStore },
       { source: "/products", headers: noStore },
       { source: "/products/:slug*", headers: noStore },
     ];

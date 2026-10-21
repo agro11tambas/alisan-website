@@ -22,7 +22,13 @@ api.interceptors.request.use(
         ? localStorage.getItem("customer_token")
         : null;
 
-    if (token) {
+    // `Authorization: null` pada satu permintaan berarti "jangan kirim token":
+    // dipakai endpoint yang kredensialnya ada di body, seperti penebusan link
+    // login, supaya token lama di localStorage tidak ikut terbawa dan ditolak
+    // ERP sebelum isi permintaannya dibaca.
+    const skipAuth = config.headers.get("Authorization") === null;
+
+    if (token && !skipAuth) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 

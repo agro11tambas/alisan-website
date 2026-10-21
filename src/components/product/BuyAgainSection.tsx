@@ -7,11 +7,16 @@ import { RotateCcw } from "lucide-react";
 import { CatalogIndexEntry } from "@/types";
 import { orderService, type SaleOrder } from "@/services/orderService";
 import { useCurrentCustomer } from "@/hooks/use-current-customer";
+import { getOrderStage } from "@/hooks/use-customer-orders";
 import { buildCatalogLookup, findCatalogEntry } from "@/utils/catalogIndexUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 
-/** Cukup pesanan terakhir: "Beli Lagi" tidak perlu riwayat penuh. */
-const RECENT_ORDER_COUNT = 20;
+/**
+ * Cukup pesanan terakhir: "Beli Lagi" tidak perlu riwayat penuh. Jumlahnya
+ * dilebihkan dari jumlah kartu karena pesanan yang belum selesai disaring
+ * dulu, jadi tidak semua pesanan yang diambil ikut dipakai.
+ */
+const RECENT_ORDER_COUNT = 40;
 const MAX_CARDS = 12;
 /**
  * Riwayat pesanan tidak berubah tiap kali beranda dibuka, jadi hasilnya
@@ -45,18 +50,21 @@ function loadRecentOrders() {
 const formatPrice = (value: number) => `Rp ${value.toLocaleString("id-ID")}`;
 
 /**
- * Produk yang pernah dipesan, terbaru lebih dulu dan tanpa duplikat. Satu
- * pesanan bisa berisi beberapa varian dari grup yang sama, dan kartunya
- * tingkat grup, jadi grup yang sama hanya tampil sekali.
+ * Produk yang pernah dibeli, terbaru lebih dulu dan tanpa duplikat. Hanya
+ * pesanan yang sudah selesai yang dihitung: selama pesanan masih menunggu
+ * verifikasi atau diproses, barangnya belum tentu jadi dibeli, jadi belum
+ * pantas ditawarkan untuk dibeli lagi. Satu pesanan bisa berisi beberapa
+ * varian dari grup yang sama, dan kartunya tingkat grup, jadi grup yang sama
+ * hanya tampil sekali.
  */
 function collectPurchasedProducts(orders: SaleOrder[], catalog: CatalogIndexEntry[]) {
   const lookup = buildCatalogLookup(catalog);
   const products: CatalogIndexEntry[] = [];
   const seenSlugs = new Set<string>();
 
-  const newestFirst = [...orders].sort(
-    (a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime(),
-  );
+  const newestFirst = orders
+    .filter((order) => getOrderStage(order) === "completed")
+    .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
 
   for (const order of newestFirst) {
     for (const item of order.items) {
@@ -145,10 +153,10 @@ function BuyAgainSkeleton() {
 }
 
 /**
- * Produk yang pernah dipesan customer, ditampilkan paling atas setelah
+ * Produk dari pesanan customer yang sudah selesai, ditampilkan setelah
  * kategori supaya pesanan rutin bisa diulang tanpa mencari lagi. Section ini
- * tidak ada untuk pengunjung yang belum masuk atau yang pesanannya tidak lagi
- * ada di katalog.
+ * tidak ada untuk pengunjung yang belum masuk, yang belum punya pesanan
+ * selesai, atau yang produknya tidak lagi ada di katalog.
  */
 export default function BuyAgainSection({ catalog }: { catalog: CatalogIndexEntry[] }) {
   const { customer, loading: customerLoading, isLoggedIn } = useCurrentCustomer();
@@ -204,7 +212,7 @@ export default function BuyAgainSection({ catalog }: { catalog: CatalogIndexEntr
               Beli Lagi
             </h2>
             <p className="hidden text-sm text-gray-500 md:block">
-              Produk yang pernah Anda pesan sebelumnya
+              Produk dari pesanan Anda yang sudah selesai
             </p>
           </div>
           <Link
