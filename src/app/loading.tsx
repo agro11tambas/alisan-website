@@ -10,30 +10,6 @@ export default function Loading() {
         </div>
       </section>
 
-      {/* Kategori */}
-      <section className="bg-white py-1.5 md:py-6">
-        <div className="w-full px-2 sm:container sm:mx-auto sm:px-4">
-          <div className="mb-1.5 flex items-center justify-between gap-3 md:mb-5">
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-40 md:h-8 md:w-56" />
-              <Skeleton className="hidden h-4 w-64 md:block" />
-            </div>
-            <Skeleton className="h-8 w-32 rounded-full md:h-10 md:w-44" />
-          </div>
-
-          <div className="-mx-2 px-2 pb-1 md:mx-0 md:p-0">
-            <div className="flex min-w-full gap-1.5 md:grid md:grid-cols-10">
-              {Array.from({ length: 10 }).map((_, index) => (
-                <Skeleton
-                  key={index}
-                  className="min-h-20 flex-[0_0_23%] rounded-lg md:min-h-28 md:flex-none"
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Featured Product */}
       <section className="border-t border-border bg-gray-50/50 py-1.5 md:py-6">
         <div className="w-full px-2 sm:container sm:mx-auto sm:px-4">

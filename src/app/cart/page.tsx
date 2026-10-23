@@ -43,6 +43,27 @@ const TABS: { id: TabId; label: string; shortLabel: string; icon: LucideIcon }[]
   { id: "completed", label: "Selesai", shortLabel: "Selesai", icon: PackageCheck },
 ];
 
+/**
+ * Tab aktif ikut ditulis ke query URL supaya refresh — atau link yang
+ * dibagikan — kembali ke tab yang sama, bukan melempar balik ke Keranjang.
+ * Keranjang adalah tab bawaan, jadi query-nya dibuang supaya /cart tetap bersih.
+ */
+const TAB_QUERY_KEY = "tab";
+
+const isTabId = (value: string | null): value is TabId =>
+  TABS.some((tab) => tab.id === value);
+
+function readTabFromUrl(): TabId {
+  // Render pertama terjadi juga di server, yang tidak punya URL browser; di
+  // sana tab bawaan sudah cukup karena halaman ini belum menampilkan apa pun
+  // sebelum sesi customer selesai dicek.
+  if (typeof window === "undefined") return "cart";
+
+  const value = new URLSearchParams(window.location.search).get(TAB_QUERY_KEY);
+
+  return isTabId(value) ? value : "cart";
+}
+
 /** Badge merah kecil di pojok ikon, seperti pintasan pesanan di aplikasi toko. */
 function TabBadge({ count }: { count: number }) {
   if (count <= 0) return null;
@@ -57,7 +78,7 @@ function TabBadge({ count }: { count: number }) {
 export default function CartPage() {
   const router = useRouter();
   const { loading: customerLoading, isLoggedIn } = useCurrentCustomer();
-  const [activeTab, setActiveTab] = useState<TabId>("cart");
+  const [activeTab, setActiveTab] = useState<TabId>(readTabFromUrl);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const cart = useCartStore();
@@ -76,9 +97,36 @@ export default function CartPage() {
    */
   useEffect(() => {
     if (!customerLoading && !isLoggedIn) {
-      router.replace(`/login?redirect=${encodeURIComponent("/cart")}`);
+      // Query-nya ikut dibawa supaya setelah login mereka kembali ke tab yang
+      // tadi dibuka, bukan ke Keranjang.
+      const target = `/cart${window.location.search}`;
+      router.replace(`/login?redirect=${encodeURIComponent(target)}`);
     }
   }, [customerLoading, isLoggedIn, router]);
+
+  /**
+   * Pakai `replaceState`, bukan router: pindah tab tidak perlu menambah riwayat
+   * — tombol Back tetap membawa customer kembali ke halaman sebelumnya — dan
+   * tidak perlu memicu navigasi yang me-reset posisi scroll.
+   */
+  const selectTab = (tabId: TabId) => {
+    setActiveTab(tabId);
+
+    const query = new URLSearchParams(window.location.search);
+
+    if (tabId === "cart") {
+      query.delete(TAB_QUERY_KEY);
+    } else {
+      query.set(TAB_QUERY_KEY, tabId);
+    }
+
+    const search = query.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      search ? `${window.location.pathname}?${search}` : window.location.pathname,
+    );
+  };
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -113,7 +161,7 @@ export default function CartPage() {
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => selectTab(tab.id)}
                 className={`flex flex-col items-center gap-1.5 rounded-lg py-2 transition-colors ${
                   isActive ? "bg-primary/5 text-primary" : "text-gray-700"
                 }`}
@@ -145,7 +193,7 @@ export default function CartPage() {
                   type="button"
                   role="tab"
                   aria-selected={isActive}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => selectTab(tab.id)}
                   className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-semibold transition-colors ${
                     isActive ? "text-primary" : "text-gray-500 hover:text-gray-700"
                   }`}

@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { productService } from "@/services/productService";
-import { categoryService } from "@/services/categoryService";
-import CategoryThumb from "@/components/category/CategoryThumb";
+import FeaturedProductCarousel from "@/components/product/FeaturedProductCarousel";
 import BuyAgainSection from "@/components/product/BuyAgainSection";
 
 // Katalog jarang berubah, jadi halaman ini di-render ulang paling sering tiap 5
@@ -11,8 +10,8 @@ import BuyAgainSection from "@/components/product/BuyAgainSection";
 export const revalidate = 300;
 
 export default async function Home() {
-  const [categories, catalogIndex] = await Promise.all([
-    categoryService.getCategoryTree(),
+  const [groups, catalogIndex] = await Promise.all([
+    productService.getProductGroups({ limit: 5 }),
     productService.getCatalogIndex(),
   ]);
 
@@ -37,47 +36,27 @@ export default async function Home() {
       {/* Beli Lagi */}
       <BuyAgainSection catalog={catalogIndex} />
 
-      {/* Categories */}
-      <section className="bg-white py-1.5 md:py-6">
+      {/* Featured Products */}
+      <section className="border-t border-border bg-gray-50/50 py-1.5 md:py-6">
         <div className="w-full px-2 sm:container sm:mx-auto sm:px-4">
           <div className="mb-1.5 flex items-center justify-between gap-3 md:mb-5">
             <div>
               <h2 className="text-lg font-bold tracking-tight text-gray-900 md:mb-1 md:text-2xl">
-                Kategori Produk
+                Featured Product
               </h2>
               <p className="hidden text-sm text-gray-500 md:block">
-                Pilih kategori sesuai kebutuhan Anda
+                Pilihan produk unggulan untuk kebutuhan bisnis Anda
               </p>
             </div>
             <Link
               href="/products"
               className="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-green-600 px-3 text-[11px] font-semibold text-white shadow-sm transition-all hover:bg-green-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 active:scale-95 md:h-10 md:px-5 md:text-sm"
             >
-              Lihat Semua Kategori
+              Lihat Semua Produk
             </Link>
           </div>
 
-          <div className="-mx-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:overflow-visible md:p-0">
-            <div className="flex min-w-full snap-x snap-mandatory gap-1.5 md:grid md:grid-cols-10">
-              {categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/products?category=${category.slug}`}
-                  className="group flex min-h-20 flex-[0_0_23%] snap-start flex-col items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-1 py-2 text-center transition-colors hover:bg-blue-50 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary md:min-h-28 md:flex-none md:gap-2.5 md:px-2 md:py-3"
-                >
-                  <CategoryThumb
-                    name={category.name}
-                    image={category.image}
-                    className="size-8 text-xs transition-colors group-hover:bg-primary group-hover:text-white md:size-12 md:text-base"
-                    sizes="(max-width: 768px) 32px, 48px"
-                  />
-                  <span className="line-clamp-2 text-[10px] font-medium leading-tight text-gray-700 transition-colors group-hover:text-primary md:text-xs">
-                    {category.name}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
+          <FeaturedProductCarousel groups={groups} />
         </div>
       </section>
     </div>
